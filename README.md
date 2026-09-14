@@ -16,6 +16,7 @@ La base local está en `data/inventory.db`. Reiniciar la app no vuelve a cargar 
 
 - Mostrar un catálogo con fotografías, precios, disponibilidad y búsqueda por modelo compatible, marca o referencia.
 - Agregar varios artículos a una venta, cambiar cantidades y confirmar el pago para descontarlos.
+- Carrito con fotos, precio unitario, subtotales y total para el cliente. Al confirmar se genera y se intenta descargar un ticket PNG para compartir; también queda disponible en la última venta y en el historial. El ticket no incluye datos de empresa, cliente ni notas internas.
 - Consultar ventas y descargar comprobantes internos en HTML, imprimibles desde el navegador.
 - Anular una venta completa y devolver sus unidades al inventario una sola vez.
 - Crear productos de cualquier categoría, añadir fotos, editar precios y archivar referencias.
@@ -46,6 +47,7 @@ Las pruebas crean bases temporales; no modifican el inventario real. Ver [PRUEBA
 | `app.py` | Pantallas y formularios de Streamlit |
 | `inventory.py` | Base de datos y transacciones de ventas |
 | `auth.py` | Autenticación y límite de intentos |
+| `ticket.py` | Ticket PNG para el cliente a partir de la venta confirmada |
 | `data/catalog_seed.json` | Catálogo inicial auditado con huella del PDF |
 | `assets/products/` | 24 imágenes originales, una por referencia |
 | `styles.css` | Apariencia y adaptación de pantalla |

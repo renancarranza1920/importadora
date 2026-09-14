@@ -46,7 +46,21 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 .empty-state {text-align:center;padding:55px 20px;background:white;border:1px dashed #cbdad1;border-radius:20px;margin:15px 0;color:#789083;}
 .empty-state strong {display:block;color:#244b3a;font-size:23px;margin-bottom:8px;}
 .receipt-total {font-family:Manrope;font-weight:800;font-size:42px;letter-spacing:-.05em;}
+[class*="st-key-cart_item_"] {background:#fff;border-radius:20px;padding:20px;}
+.cart-product {display:grid;grid-template-columns:140px minmax(0,1fr);gap:24px;align-items:center;}
+.cart-product .product-photo {height:150px;margin:0;}
+.cart-product .product-title {min-height:0;font-size:22px;}
+.cart-unit {font-size:24px;font-weight:700;margin-bottom:8px;}
+.cart-unit span {font-size:13px;font-weight:400;color:#61746b;}
+.cart-subtotal,.cart-total {display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;}
+.cart-subtotal {border-top:1px solid #e3eae6;padding-top:16px;color:#61746b;}
+.cart-subtotal strong {color:#183d2f;font-size:20px;}
+.cart-total {background:#e8f3ed;border:1px solid #c8dfd1;padding:24px;border-radius:20px;margin:12px 0 20px;}
 @media(max-width:640px) {
+ .cart-product {grid-template-columns:100px minmax(0,1fr);gap:14px;}
+ .cart-product .product-photo {height:120px;}
+ .cart-product .product-title {font-size:18px;}
+ .cart-total {padding:18px;}
  .stMainBlockContainer {padding:4rem 1rem 5rem;}
  .hero {padding:27px 24px;border-radius:18px;margin-top:5px;}
  .hero h1 {font-size:29px!important;max-width:90%;}

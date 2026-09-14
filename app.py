@@ -13,9 +13,11 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import streamlit as st
+import streamlit.components.v1 as components
 from sqlalchemy.exc import SQLAlchemyError
 
 import auth
+from ticket import ticket_png
 from inventory import Inventory, InventoryError, ROOT, cents
 
 st.set_page_config(page_title="IMPORTADORA · Catálogo e inventario", page_icon="📦", layout="wide",
@@ -224,6 +226,21 @@ def receipt(sale):
 
 
 def sale_view(sale):
+    png = ticket_png(sale)
+    st.download_button("Descargar ticket en imagen", png, file_name=f"ticket-{sale['id'][:8]}.png",
+                       mime="image/png", key=f"ticket_{sale['id']}", type="primary", on_click="ignore")
+    with st.expander("Vista previa del ticket para el cliente"):
+        st.image(png, width=360)
+    if st.session_state.get("download_sale") == sale["id"]:
+        st.session_state.pop("download_sale", None)
+        encoded = base64.b64encode(png).decode("ascii")
+        components.html(f'''<script>
+        const a = document.createElement('a');
+        a.href = "data:image/png;base64,{encoded}";
+        a.download = "ticket-{sale['id'][:8]}.png";
+        document.body.appendChild(a); a.click(); a.remove();
+        </script>''', height=0)
+        st.caption("Ticket listo. Si tu navegador no inició la descarga, toca «Descargar ticket en imagen».")
     st.write(f"**Venta {sale['id'][:8].upper()} · {sale['customer']}**")
     st.caption(f"{local_time(sale['created_at']).strftime('%d/%m/%Y %H:%M')} · {sale['payment']} · {'Anulada' if sale['status']=='voided' else 'Confirmada'}")
     st.dataframe([{"Referencia": i["sku"], "Artículo": i["name"], "Unidades": i["quantity"],
@@ -247,9 +264,12 @@ def cart_page():
     invalid = False
     for sku, entry in list(cart.items()):
         p = db.get_product(sku)
-        with st.container(border=True):
-            st.write(f"**{p['name']}** · {sku}")
-            st.caption(f"{p['stock']} unidades disponibles · {money(p['price_cents'])} por unidad")
+        with st.container(border=True, key=f"cart_item_{sku}"):
+            st.html('<div class="cart-product">' + photo_markup(p) +
+                    f'<div><div class="product-ref">{escape(p["brand"])} / {escape(sku)}</div>'
+                    f'<div class="product-title">{escape(p["name"])}</div>'
+                    f'<div class="cart-unit">{money(entry["price_cents"])} <span>por unidad</span></div>'
+                    f'<div class="muted">{p["stock"]} disponibles</div></div></div>')
             qty = st.number_input(f"Cantidad · {sku}", min_value=1, max_value=10000000,
                                    value=entry["quantity"], step=1, key=f"qty_{sku}")
             if qty != entry["quantity"]:
@@ -265,14 +285,17 @@ def cart_page():
                     entry["price_cents"] = p["price_cents"]
                     new_cart_key()
                     st.rerun()
-            st.write(f"Subtotal: **{money(qty * entry['price_cents'])}**")
+            st.html(f'<div class="cart-subtotal"><span>{qty} × {money(entry["price_cents"])}</span>'
+                    f'<strong>Subtotal: {money(qty * entry["price_cents"])}</strong></div>')
             if st.button("Quitar artículo", key=f"remove_{sku}", icon=":material/delete:"):
                 del cart[sku]
                 st.session_state.pop(f"qty_{sku}", None)
                 new_cart_key()
                 st.rerun()
             total += qty * entry["price_cents"]
-    st.html(f'<div class="eyebrow">Total de la venta · USD</div><div class="receipt-total">{money(total)}</div>')
+    st.html(f'<div class="cart-total"><div><div class="eyebrow">Total para el cliente · USD</div>'
+            f'<div class="muted">{sum(e["quantity"] for e in cart.values())} unidades · {len(cart)} productos</div></div>'
+            f'<div class="receipt-total">{money(total)}</div></div>')
     with st.form("checkout"):
         customer = st.text_input("Cliente (opcional)", max_chars=200, placeholder="Cliente general")
         payment = st.selectbox("Medio de pago", ["Efectivo", "Transferencia", "Tarjeta", "Otro"])
@@ -284,6 +307,7 @@ def cart_page():
             else:
                 sale_id = db.confirm_sale(cart, customer, payment, notes, st.session_state["sale_request"])
                 st.session_state["last_sale"] = sale_id
+                st.session_state["download_sale"] = sale_id
                 for sku in list(cart):
                     st.session_state.pop(f"qty_{sku}", None)
                 st.session_state["cart"] = {}

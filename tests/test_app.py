@@ -71,6 +71,8 @@ def test_real_sale_form_confirmation_and_logout(ui):
     assert db.list_sales()[0]["customer"] == "Cliente UI"
     assert any("confirmada" in s.value for s in app.success)
     assert app.session_state["cart"] == {}
+    assert any(e.label == "Descargar ticket en imagen" for e in app.get("download_button"))
+    assert "download_sale" not in app.session_state
     no_errors(button(app, "Cerrar sesión").click().run())
     assert "Inventario" not in app.radio(key="nav").options
 
