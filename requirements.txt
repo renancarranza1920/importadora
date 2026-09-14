@@ -1,0 +1,5 @@
+streamlit==1.63.0
+SQLAlchemy>=2.0.43,<2.1
+psycopg[binary]>=3.3.3,<3.4
+Pillow>=12.2.0,<13
+tzdata>=2026.1

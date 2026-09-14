@@ -1,0 +1,13 @@
+__pycache__/
+.pytest_cache/
+.venv/
+.streamlit/secrets.toml
+.env
+data/*.db
+data/*.db-*
+data/*.sqlite*
+data/*.hash
+ACCESO_LOCAL.txt
+tmp/
+output/
+*.log

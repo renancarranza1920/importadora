@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+html,body,[class*="st-"],button,input {font-family:'DM Sans',sans-serif;}
+h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!important;}
+.stMainBlockContainer {padding-top:2rem; max-width:1460px; padding-bottom:5rem;}
+[data-testid="stSidebar"] {background:#fff;border-right:1px solid #e5ece8;}
+[data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.2rem;}
+.brand {display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.10em;font-size:16px;margin:5px 0 5px;}
+.brand-icon {display:grid;place-items:center;width:43px;height:43px;border-radius:13px;background:#137b60;color:white;font-size:23px;}
+.brand-sub {font-size:11px;color:#798982;letter-spacing:.08em;margin-left:55px;margin-bottom:35px;}
+.eyebrow {font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#789185;margin-bottom:8px;}
+.hero {position:relative;background:#123e32;border-radius:24px;padding:36px 40px;margin:10px 0 26px;overflow:hidden;color:#fff;}
+.hero:after {content:'';position:absolute;right:-45px;top:-95px;width:330px;height:330px;border:1px solid #426758;border-radius:50%;box-shadow:0 0 0 44px #224c3e,0 0 0 45px #3b6050,0 0 0 90px #204738;opacity:.65;pointer-events:none;}
+.hero h1 {color:#fff!important;font-size:38px!important;line-height:1.18!important;margin:0 0 12px!important;padding:0!important;max-width:650px;position:relative;z-index:1;}
+.hero p {color:#d1e2d8;margin:0;font-size:14px;position:relative;z-index:1;max-width:620px;}
+.hero .eyebrow {color:#b9dac7;position:relative;z-index:1;}
+.hero-badge {display:inline-block;margin-top:22px;font-size:11px;background:#ffffff15;border:1px solid #ffffff28;border-radius:50px;padding:6px 12px;color:#d9eade;position:relative;z-index:1;}
+.section-line {display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px;gap:10px;}
+.section-line h2 {font-size:24px;margin:0;}
+.muted {color:#7a8982;font-size:12px;}
+.product-photo {display:flex;align-items:center;justify-content:center;background:#f3f5f4;border-radius:13px;height:192px;margin:0 0 14px;overflow:hidden;}
+.product-photo img {width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;}
+.product-ref {font-size:10px;font-weight:700;color:#85958c;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;}
+.product-title {font-family:Manrope,sans-serif;font-size:17px;font-weight:800;line-height:1.35;letter-spacing:-.02em;min-height:47px;margin-bottom:10px;}
+.product-foot {display:flex;justify-content:space-between;align-items:center;gap:5px;margin:5px 0 10px;}
+.product-price {font-weight:800;font-size:24px;letter-spacing:-.05em;}
+.price-currency {font-size:10px;letter-spacing:0;font-weight:500;color:#7a8982;}
+.stock {font-size:10px;font-weight:700;border-radius:30px;padding:5px 8px;background:#e4f1e9;color:#26714e;white-space:nowrap;}
+.stock.low {color:#a16b17;background:#fff3da;}.stock.empty {color:#8b574e;background:#faeae7;}
+[class*="st-key-card_"] {background:white;border:1px solid #e3eae6!important;box-shadow:0 3px 8px #143e2603;border-radius:18px!important;padding:15px!important;}
+[data-testid="stMetric"] {background:white;border:1px solid #e3eae6;border-radius:16px;padding:16px 20px;}
+[data-testid="stMetricValue"] {font-family:Manrope,sans-serif;font-weight:800;letter-spacing:-.05em;}
+[data-testid="stMetricLabel"] {color:#788980;font-size:12px;}
+.stButton button {min-height:43px;border-radius:10px;}
+.stDownloadButton button {min-height:43px;}
+[data-testid="stForm"] {background:white;}
+.side-note {background:#f1f6f3;border-radius:13px;padding:15px;color:#5d796b;font-size:12px;line-height:1.7;margin-top:25px;}
+.empty-state {text-align:center;padding:55px 20px;background:white;border:1px dashed #cbdad1;border-radius:20px;margin:15px 0;color:#789083;}
+.empty-state strong {display:block;color:#244b3a;font-size:23px;margin-bottom:8px;}
+.receipt-total {font-family:Manrope;font-weight:800;font-size:42px;letter-spacing:-.05em;}
+@media(max-width:640px) {
+ .stMainBlockContainer {padding:1.2rem 1rem 5rem;}
+ .hero {padding:27px 24px;border-radius:18px;margin-top:5px;}
+ .hero h1 {font-size:29px!important;max-width:90%;}
+ .hero:after {right:-210px;opacity:.4;}
+ [class*="st-key-card_"] {width:100%!important;max-width:100%!important;}
+ .product-photo {height:235px;}
+ .product-title {min-height:0;}
+ [data-testid="stMetric"] {padding:12px;}
+ .section-line {align-items:flex-start;flex-direction:column;}
+}
