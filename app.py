@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import csv
 import html
+import hashlib
 import io
 import logging
 import os
@@ -45,7 +46,9 @@ ENCODED = auth.configured_hash(config, PRODUCTION)
 
 
 @st.cache_resource
-def database(url, production):
+def database(url, production, implementation_revision):
+    # Streamlit does not invalidate this resource when only inventory.py changes.
+    # Include that file's revision in the cache key so new methods/tables are loaded.
     db = Inventory(url, production)
     db.seed()
     return db
@@ -549,7 +552,7 @@ if not url and not PRODUCTION:
 try:
     if PRODUCTION and not ENCODED.startswith("pbkdf2_sha256$"):
         raise InventoryError("Configura ADMIN_PASSWORD_HASH en Secrets. Consulta docs/PUBLICAR_EN_INTERNET.md.")
-    db = database(url, PRODUCTION)
+    db = database(url, PRODUCTION, hashlib.sha256((ROOT / "inventory.py").read_bytes()).hexdigest())
 except (InventoryError, SQLAlchemyError, ValueError):
     st.error("No se pudo iniciar la base de datos o falta configurar el acceso.")
     st.info("En tu computadora abre INICIAR_APP.bat. Para publicar, completa DATABASE_URL, APP_ENV y ADMIN_PASSWORD_HASH en Secrets según la guía.")

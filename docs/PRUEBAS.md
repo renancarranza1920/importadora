@@ -2,6 +2,12 @@
 
 Fecha de última verificación: 14 de septiembre de 2026.
 
+## Actualización del recurso de base de datos
+
+- 34 pruebas aprobadas. La caché de conexión ahora incluye la huella de `inventory.py`, para reconstruir el recurso al actualizar su implementación.
+- Prueba de regresión: actualización desde una base sin tabla de fotos, creación de la tabla nueva y conservación de existencias previamente ajustadas.
+- Al publicar, subir juntos `app.py` e `inventory.py`. Si el servidor conserva una versión anterior del módulo, reiniciar la app desde Streamlit.
+
 ## Inventario visual y fotos reales
 
 - 33 pruebas automatizadas aprobadas. Cobertura nueva: persistencia de varias fotos, sustitución y eliminación, validación de imágenes, guardado atómico ante errores y versiones desactualizadas, respaldo/restauración y compatibilidad con respaldos anteriores.
