@@ -1,11 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
-html,body,[class*="st-"],button,input {font-family:'DM Sans',sans-serif;}
+/* Never target st-* globally: that also matches Streamlit's icon font. */
+html,body,.stApp,button,input,textarea {font-family:'DM Sans',sans-serif;}
 h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!important;}
-.stMainBlockContainer {padding-top:2rem; max-width:1460px; padding-bottom:5rem;}
+.stMainBlockContainer {padding-top:4.5rem; max-width:1460px; padding-bottom:5rem;}
 [data-testid="stSidebar"] {background:#fff;border-right:1px solid #e5ece8;}
 [data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.2rem;}
 .brand {display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.10em;font-size:16px;margin:5px 0 5px;}
-.brand-icon {display:grid;place-items:center;width:43px;height:43px;border-radius:13px;background:#137b60;color:white;font-size:23px;}
+.brand-icon {display:grid;place-items:center;width:43px;height:43px;flex-shrink:0;border-radius:13px;background:#137b60;color:white;font-size:23px;}
+.brand {overflow-wrap:anywhere;}
 .brand-sub {font-size:11px;color:#798982;letter-spacing:.08em;margin-left:55px;margin-bottom:35px;}
 .eyebrow {font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#789185;margin-bottom:8px;}
 .hero {position:relative;background:#123e32;border-radius:24px;padding:36px 40px;margin:10px 0 26px;overflow:hidden;color:#fff;}
@@ -21,7 +23,14 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 .product-photo img {width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;}
 .product-ref {font-size:10px;font-weight:700;color:#85958c;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;}
 .product-title {font-family:Manrope,sans-serif;font-size:17px;font-weight:800;line-height:1.35;letter-spacing:-.02em;min-height:47px;margin-bottom:10px;}
-.product-foot {display:flex;justify-content:space-between;align-items:center;gap:5px;margin:5px 0 10px;}
+.product-foot {display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin:5px 0 10px;}
+.product-title,.product-ref {overflow-wrap:anywhere;}
+.product-price {white-space:nowrap;}
+.st-key-catalog_grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,255px),1fr));align-items:start;}
+.st-key-catalog_grid > [data-testid="stLayoutWrapper"] {width:100%;min-width:0;max-width:100%;}
+.st-key-catalog_grid [class*="st-key-card_"] {width:100%!important;min-width:0;}
+[data-testid="stExpander"] summary {gap:8px;min-height:44px;}
+[data-testid="stExpander"] summary [data-testid="stMarkdownContainer"] {min-width:0;overflow-wrap:anywhere;}
 .product-price {font-weight:800;font-size:24px;letter-spacing:-.05em;}
 .price-currency {font-size:10px;letter-spacing:0;font-weight:500;color:#7a8982;}
 .stock {font-size:10px;font-weight:700;border-radius:30px;padding:5px 8px;background:#e4f1e9;color:#26714e;white-space:nowrap;}
@@ -38,7 +47,7 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 .empty-state strong {display:block;color:#244b3a;font-size:23px;margin-bottom:8px;}
 .receipt-total {font-family:Manrope;font-weight:800;font-size:42px;letter-spacing:-.05em;}
 @media(max-width:640px) {
- .stMainBlockContainer {padding:1.2rem 1rem 5rem;}
+ .stMainBlockContainer {padding:4rem 1rem 5rem;}
  .hero {padding:27px 24px;border-radius:18px;margin-top:5px;}
  .hero h1 {font-size:29px!important;max-width:90%;}
  .hero:after {right:-210px;opacity:.4;}

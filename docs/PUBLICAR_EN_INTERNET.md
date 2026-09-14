@@ -96,6 +96,18 @@ La documentación oficial muestra [cómo seleccionar el repositorio y configurar
 8. Reinicia la app desde Streamlit y verifica que la venta anulada y los movimientos siguen presentes. No uses una venta de un cliente real para esta prueba.
 9. Descarga un respaldo en **Ayuda y respaldo**.
 
+## Actualizar la app ya publicada (redeploy)
+
+1. En GitHub Desktop, selecciona este repositorio y la rama que utiliza tu app (normalmente `main`). Revisa los cambios, escribe un resumen, pulsa **Commit to main** y después **Push origin**. Si subes desde la web de GitHub, reemplaza los archivos conservando sus carpetas y confirma el commit en esa misma rama.
+2. Streamlit Community Cloud detecta los cambios en GitHub y actualiza la app automáticamente. Conserva el mismo repositorio, rama y archivo principal `app.py`.
+3. Abre tu URL y espera a que termine la actualización. Si los estilos siguen antiguos, recarga con **Ctrl+F5**.
+4. Si no se actualiza, entra a [share.streamlit.io](https://share.streamlit.io/), localiza la app y selecciona **⋮ → Reboot**. Revisa los logs si aparece un error. No necesitas eliminar la app ni crear otra dirección.
+5. Comprueba el menú lateral, los desplegables y «Ver detalles», también desde el celular. Prueba búsqueda, filtros y acceso de administrador.
+
+Mantén los Secrets existentes, especialmente `DATABASE_URL`: los productos y ventas permanecen en la misma base PostgreSQL. Reiniciar interrumpe las sesiones y puede vaciar carritos sin confirmar; termina las ventas pendientes antes de hacerlo. Descarga un respaldo desde **Ayuda y respaldo** antes de actualizar.
+
+Fuentes: [actualizaciones desde GitHub](https://docs.streamlit.io/deploy/streamlit-community-cloud) y [reiniciar una app](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/reboot-your-app).
+
 ## 7. Usarla como acceso directo
 
 En Android, abre el menú de Chrome y usa **Agregar a pantalla principal**. En iPhone, abre la app en Safari, toca **Compartir** y **Agregar a inicio**. Esto crea un acceso directo; necesitas internet para confirmar ventas.

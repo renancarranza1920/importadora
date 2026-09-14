@@ -150,3 +150,25 @@ def test_production_missing_configuration_is_closed(monkeypatch):
     app = no_errors(AppTest.from_file(str(ROOT / "app.py")).run())
     assert app.error
     assert not app.radio
+
+
+def test_catalog_filters_reset_page_and_empty_results(ui):
+    app, _ = ui
+    app.selectbox(key="catalog_page").set_value(2).run()
+    app.selectbox(key="catalog_order").set_value("Mayor precio").run()
+    assert app.selectbox(key="catalog_page").value == 1
+    app.text_input(key="search").set_value("modelo inexistente").run()
+    assert not app.expander
+    no_errors(button(app, "Limpiar filtros").click().run())
+    assert app.text_input(key="search").value == ""
+    assert app.selectbox(key="catalog_order").value == "Referencia"
+    assert len(app.expander) == 12
+
+
+def test_catalog_search_ignores_accents(ui):
+    app, db = ui
+    db.save_product(dict(sku="USB-TEST", name="Cable edición especial", compatibility="USB",
+                         brand="Genérica", category="Cables", price_cents=200,
+                         low_stock=1, stock=5, notes="", active=True))
+    no_errors(app.text_input(key="search").set_value("generica edicion").run())
+    assert len(app.expander) == 1

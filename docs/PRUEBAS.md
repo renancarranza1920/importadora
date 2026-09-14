@@ -1,8 +1,17 @@
 # Verificación de IMPORTADORA
 
-Fecha: 13 de septiembre de 2026.
+Fecha de última verificación: 14 de septiembre de 2026.
 
-## Resultado realizado
+## Corrección de iconos y vistas
+
+- **29 pruebas automatizadas aprobadas** con Python 3.12, Streamlit 1.63.0 y SQLAlchemy 2.0.52 (`.venv/Scripts/python -m pytest tests -q`).
+- Chrome sin ventana: catálogo a 1440, 768 y 390 píxeles; fuentes nativas de iconos conservadas, 12 tarjetas dentro del ancho visible sin superponerse y apertura de «Ver detalles» correcta. En móvil las tarjetas aprovechan el ancho disponible.
+- Nuevas pruebas: reinicio de paginación al ordenar, búsqueda sin resultados, limpieza de filtros y búsqueda sin tildes.
+- Se mantienen las pruebas de acceso, ventas, cantidades, anulaciones, ajustes, edición concurrente y respaldo.
+- La primera ejecución excedió el tiempo de arranque de una prueba; la segunda ejecución completa terminó con 29 aprobadas en 11,96 segundos.
+- Se utilizaron bases SQLite temporales. No se probaron escrituras contra PostgreSQL ni contra la app publicada; estos cambios quedan pendientes de subir a GitHub.
+
+## Verificación anterior (13 de septiembre)
 
 **27 pruebas automatizadas aprobadas**, con Python 3.14, Streamlit 1.63.0 y SQLAlchemy 2.0.49. El servidor local devuelve HTTP 200 y su comprobación de salud responde `ok`.
 

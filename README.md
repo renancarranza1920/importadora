@@ -26,7 +26,7 @@ La base local está en `data/inventory.db`. Reiniciar la app no vuelve a cargar 
 
 Sigue **[la guía para publicar en internet](docs/PUBLICAR_EN_INTERNET.md)**. La combinación preparada es Streamlit Community Cloud para ejecutar la app y PostgreSQL en Neon para conservar tus datos.
 
-**Estado de entrega: funciona en esta computadora. Todavía no hay una dirección pública.** Crear o conectar tus cuentas de GitHub, Neon y Streamlit es el paso pendiente para publicarla. No compartas contraseñas o conexiones privadas en el chat ni las subas al repositorio.
+**App publicada:** https://importadora-myrr4sgdikyma8ew9bmgcm.streamlit.app/. Para actualizarla, sube los cambios a la rama conectada en Streamlit; consulta «Actualizar la app ya publicada (redeploy)» en la guía. No subas contraseñas o conexiones privadas al repositorio.
 
 `localhost` solo funciona en esta computadora. Cuando publiques en Streamlit usarás una dirección HTTPS desde el celular con Wi-Fi o datos móviles; no necesitas mantener encendida esta computadora.
 

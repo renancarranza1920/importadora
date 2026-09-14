@@ -6,6 +6,7 @@ import html
 import io
 import logging
 import os
+import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -63,6 +64,15 @@ def escape(value):
 def flash(message):
     st.session_state["flash"] = message
     st.rerun()
+
+
+def reset_catalog_filters():
+    for key in ("search", "catalog_brand", "catalog_category", "catalog_order", "catalog_stock", "catalog_page", "catalog_filters"):
+        st.session_state.pop(key, None)
+
+
+def search_text(value):
+    return "".join(c for c in unicodedata.normalize("NFKD", str(value).casefold()) if not unicodedata.combining(c))
 
 
 def new_cart_key():
@@ -137,15 +147,16 @@ def catalogue(seller):
     st.html(f'<div class="section-line"><h2>Encuentra tu modelo</h2><span class="muted">{len(all_items)} referencias · {sum(p["stock"] for p in all_items):,} unidades disponibles</span></div>')
     search = st.text_input("Buscar por modelo o referencia", placeholder="Ej. A26, iPhone 14, A06-01…", key="search", icon=":material/search:")
     cols = st.columns([1, 1, 1])
-    brand = cols[0].selectbox("Marca", ["Todas las marcas"] + sorted({p["brand"] for p in all_items}))
-    category = cols[1].selectbox("Categoría", ["Todas las categorías"] + sorted({p["category"] for p in all_items}))
-    order = cols[2].selectbox("Ordenar", ["Referencia", "Menor precio", "Mayor precio", "Más disponibles"])
-    only_stock = st.toggle("Solo artículos disponibles", value=True)
+    brand = cols[0].selectbox("Marca", ["Todas las marcas"] + sorted({p["brand"] for p in all_items}), key="catalog_brand")
+    category = cols[1].selectbox("Categoría", ["Todas las categorías"] + sorted({p["category"] for p in all_items}), key="catalog_category")
+    order = cols[2].selectbox("Ordenar", ["Referencia", "Menor precio", "Mayor precio", "Más disponibles"], key="catalog_order")
+    only_stock = st.toggle("Solo artículos disponibles", value=True, key="catalog_stock")
+    st.button("Limpiar filtros", on_click=reset_catalog_filters)
     # Repeating the family prefix makes searching "iphone 14" also find "iPhone 13/14".
     def searchable(p):
-        value = " ".join(str(p[k]) for k in ("sku", "name", "compatibility", "brand", "category"))
+        value = search_text(" ".join(str(p[k]) for k in ("sku", "name", "compatibility", "brand", "category")))
         compact = value.casefold().replace(" ", "")
-        terms = search.casefold().split()
+        terms = search_text(search).split()
         for term in terms:
             if term not in value.casefold() and term.replace(" ", "") not in compact:
                 return False
@@ -160,8 +171,12 @@ def catalogue(seller):
         st.html('<div class="empty-state"><strong>No encontramos ese modelo</strong>Prueba otra referencia o cambia los filtros.</div>')
         return
     pages = max(1, (len(items) + 11) // 12)
-    page = st.selectbox("Página de resultados", list(range(1, pages + 1)), format_func=lambda n: f"Página {n} de {pages}") if pages > 1 else 1
-    with st.container(horizontal=True, gap="small"):
+    filters = (search, brand, category, order, only_stock)
+    if st.session_state.get("catalog_filters") != filters or st.session_state.get("catalog_page", 1) > pages:
+        st.session_state["catalog_page"] = 1
+    st.session_state["catalog_filters"] = filters
+    page = st.selectbox("Página de resultados", list(range(1, pages + 1)), key="catalog_page", format_func=lambda n: f"Página {n} de {pages}") if pages > 1 else 1
+    with st.container(horizontal=True, gap="small", key="catalog_grid"):
         for p in items[(page - 1) * 12:page * 12]:
             with st.container(width=255, border=True, key=f"card_{p['sku']}"):
                 stock_class = "empty" if not p["stock"] else "low" if p["stock"] <= p["low_stock"] else ""
@@ -322,7 +337,8 @@ def inventory_page():
                     and (not low_only or p["stock"] <= p["low_stock"])]
         rows = inventory_rows(filtered)
         st.dataframe(rows, hide_index=True, width="stretch")
-        st.download_button("Exportar inventario CSV", csv_export(inventory_rows(items)), "inventario.csv", "text/csv")
+        st.caption(f"{len(filtered)} de {len(items)} referencias")
+        st.download_button("Exportar inventario CSV", csv_export(rows), "inventario.csv", "text/csv")
         return
     sku = st.selectbox("Selecciona el artículo", [p["sku"] for p in items],
                        format_func=lambda x: next(f"{p['sku']} · {p['name']}" for p in items if p["sku"] == x))
