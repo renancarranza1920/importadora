@@ -20,6 +20,7 @@ La base local está en `data/inventory.db`. Reiniciar la app no vuelve a cargar 
 - Consultar ventas y descargar comprobantes internos en HTML, imprimibles desde el navegador.
 - Anular una venta completa y devolver sus unidades al inventario una sola vez.
 - Crear productos de cualquier categoría, añadir fotos, editar precios y archivar referencias.
+- Administrar existencias desde tarjetas con foto y accesos directos a editar o reponer. Al crear o editar, previsualiza la foto principal y añade hasta ocho fotos reales (5 MB por foto); puedes quitar fotos seleccionadas antes de guardar. El carrito muestra un carrete de fotos reales, con zoom al pasar el mouse y desplazamiento horizontal en el celular.
 - Registrar entradas o salidas justificadas y consultar su historial.
 - Exportar inventario, ventas y movimientos en CSV, y un respaldo completo en JSON.
 

@@ -174,3 +174,19 @@ def test_catalog_search_ignores_accents(ui):
                          low_stock=1, stock=5, notes="", active=True))
     no_errors(app.text_input(key="search").set_value("generica edicion").run())
     assert len(app.expander) == 1
+
+
+def test_visual_inventory_shortcuts_and_real_photo_cart(ui):
+    from test_photos import photo
+    app, db = ui
+    p = db.get_product("A06-01")
+    db.save_product(p, p["version"], real_photos=[photo(), photo()])
+    login(app)
+    navigate(app, "Inventario")
+    no_errors(app.button(key="edit_A06-01").click().run())
+    assert field(app.text_input, "Referencia única").value == "A06-01"
+    assert len(app.multiselect[0].options) == 2
+    navigate(app, "Catálogo")
+    app.button(key="add_A06-01").click().run()
+    navigate(app, "Nueva venta")
+    assert any(e.label == "Foto real · 2 fotos" for e in app.expander)

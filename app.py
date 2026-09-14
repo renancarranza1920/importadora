@@ -18,7 +18,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 import auth
 from ticket import ticket_png
-from inventory import Inventory, InventoryError, ROOT, cents
+from inventory import Inventory, InventoryError, ROOT, cents, clean_image
 
 st.set_page_config(page_title="IMPORTADORA · Catálogo e inventario", page_icon="📦", layout="wide",
                    initial_sidebar_state="auto")
@@ -121,6 +121,27 @@ def title(kicker, heading, description=""):
     st.html(f'<div class="eyebrow">{escape(kicker)}</div><h1>{escape(heading)}</h1>')
     if description:
         st.caption(description)
+
+
+def product_summary(p):
+    st.html('<div class="cart-product">' + photo_markup(p) +
+            f'<div><div class="product-ref">{escape(p["sku"])}</div>'
+            f'<div class="product-title">{escape(p["name"])}</div>'
+            f'<div class="cart-unit">{money(p["price_cents"])}</div>'
+            f'<span class="stock">{p["stock"]} disponibles</span>'
+            f'<p class="muted">{"Activo" if p["active"] else "Archivado"}</p></div></div>')
+
+
+def photo_reel(photos):
+    st.html('<div class="photo-reel" tabindex="0" aria-label="Fotos reales; desliza para ver más">' +
+            ''.join(f'<figure tabindex="0"><img alt="Foto real {index + 1}" src="data:image/jpeg;base64,{base64.b64encode(raw).decode()}">'
+                    f'<figcaption>Foto {index + 1} de {len(photos)}</figcaption></figure>'
+                    for index, raw in enumerate(photos)) + '</div>')
+
+
+def open_inventory(sku, action):
+    st.session_state["inventory_action"] = action
+    st.session_state["inventory_sku"] = sku
 
 
 def login_page():
@@ -235,10 +256,11 @@ def sale_view(sale):
         st.session_state.pop("download_sale", None)
         encoded = base64.b64encode(png).decode("ascii")
         components.html(f'''<script>
-        const a = document.createElement('a');
+        const doc = window.parent.document;
+        const a = doc.createElement('a');
         a.href = "data:image/png;base64,{encoded}";
         a.download = "ticket-{sale['id'][:8]}.png";
-        document.body.appendChild(a); a.click(); a.remove();
+        doc.body.appendChild(a); a.click(); a.remove();
         </script>''', height=0)
         st.caption("Ticket listo. Si tu navegador no inició la descarga, toca «Descargar ticket en imagen».")
     st.write(f"**Venta {sale['id'][:8].upper()} · {sale['customer']}**")
@@ -270,6 +292,11 @@ def cart_page():
                     f'<div class="product-title">{escape(p["name"])}</div>'
                     f'<div class="cart-unit">{money(entry["price_cents"])} <span>por unidad</span></div>'
                     f'<div class="muted">{p["stock"]} disponibles</div></div></div>')
+            real = db.list_photos(sku)
+            if real:
+                with st.expander(f"Foto real · {len(real)} fotos", expanded=True):
+                    st.caption("Desliza para ver las fotos. En computadora, pasa el mouse para ampliar.")
+                    photo_reel([r["image_data"] for r in real])
             qty = st.number_input(f"Cantidad · {sku}", min_value=1, max_value=10000000,
                                    value=entry["quantity"], step=1, key=f"qty_{sku}")
             if qty != entry["quantity"]:
@@ -318,7 +345,24 @@ def cart_page():
 def product_form(product=None):
     p = product or {"sku": "", "name": "", "compatibility": "", "brand": "", "category": "Protectores",
                     "price_cents": 0, "low_stock": 5, "notes": "", "active": True, "stock": 0}
-    with st.form("product_edit" if product else "product_new", clear_on_submit=not bool(product)):
+    identity = f"{p['sku']}_{p['version']}" if product else f"new_{st.session_state.get('new_product_revision', 0)}"
+    st.subheader("Fotografías del artículo")
+    photo = st.file_uploader("Foto del artículo (máximo 5 MB)", type=["jpg", "jpeg", "png", "webp"], key=f"cover_{identity}")
+    if photo:
+        st.image(clean_image(photo.getvalue()), caption="Vista previa de la foto principal", width=240)
+    existing = db.list_photos(p["sku"]) if product else []
+    if existing:
+        photo_reel([r["image_data"] for r in existing])
+    removed = st.multiselect("Fotos reales que deseas quitar", [r["id"] for r in existing],
+                            format_func=lambda value: f"Foto {next(i + 1 for i, r in enumerate(existing) if r['id'] == value)}",
+                            key=f"remove_photos_{identity}") if existing else []
+    uploads = st.file_uploader("Añadir fotos reales (hasta 8 en total, máximo 5 MB cada una)",
+                               type=["jpg", "jpeg", "png", "webp"], accept_multiple_files=True, key=f"real_{identity}")
+    prepared = [clean_image(f.getvalue()) for f in uploads]
+    if prepared:
+        photo_reel(prepared)
+    st.caption("Las fotos se guardan al crear el artículo o guardar los cambios. Las fotos reales aparecen en el carrito.")
+    with st.form(f"product_{identity}", clear_on_submit=not bool(product)):
         sku = st.text_input("Referencia única", value=p["sku"], disabled=bool(product), max_chars=60)
         name = st.text_input("Nombre del artículo", value=p["name"], max_chars=200)
         compatibility = st.text_input("Modelos compatibles", value=p["compatibility"], max_chars=1500,
@@ -330,14 +374,16 @@ def product_form(product=None):
                                  value=p["price_cents"] / 100, step=0.25, format="%.2f")
         low = c2.number_input("Avisar cuando queden", min_value=0, max_value=10000000, value=p["low_stock"], step=1)
         stock = st.number_input("Unidades iniciales", min_value=0, max_value=10000000, value=0, step=1) if not product else p["stock"]
-        photo = st.file_uploader("Foto del artículo (máximo 5 MB)", type=["jpg", "jpeg", "png", "webp"])
         notes = st.text_area("Notas del artículo (visibles en el catálogo)", value=p["notes"], max_chars=3000)
         active = st.checkbox("Artículo activo en el catálogo", value=p["active"])
         if st.form_submit_button("Guardar cambios" if product else "Crear artículo", type="primary"):
             db.save_product(dict(sku=sku, name=name, compatibility=compatibility, brand=brand, category=category,
                 price_cents=cents(f"{price:.2f}"), low_stock=int(low), stock=int(stock), notes=notes, active=active),
-                expected_version=p["version"] if product else None, image=photo.getvalue() if photo else None)
+                expected_version=p["version"] if product else None, image=photo.getvalue() if photo else None,
+                real_photos=([r["image_data"] for r in existing if r["id"] not in removed] + prepared) if uploads or removed else None)
             st.session_state.pop("editing_product", None)
+            if not product:
+                st.session_state["new_product_revision"] = st.session_state.get("new_product_revision", 0) + 1
             flash("Artículo guardado.")
 
 
@@ -350,7 +396,7 @@ def inventory_page():
     c2.metric("Valor a precio de venta", money(sum(p["stock"] * p["price_cents"] for p in items)))
     c3.metric("Referencias por reponer", sum(p["stock"] <= p["low_stock"] for p in active))
     st.caption("El valor del inventario utiliza precios de venta; no representa costo ni ganancia.")
-    action = st.radio("Gestión", ["Existencias", "Reponer / ajustar", "Editar artículo", "Nuevo artículo"], horizontal=True)
+    action = st.radio("Gestión", ["Existencias", "Reponer / ajustar", "Editar artículo", "Nuevo artículo"], horizontal=True, key="inventory_action")
     if action == "Nuevo artículo":
         product_form()
         return
@@ -360,15 +406,29 @@ def inventory_page():
         filtered = [p for p in items if search.casefold() in (p["sku"] + " " + p["name"] + " " + p["compatibility"]).casefold()
                     and (not low_only or p["stock"] <= p["low_stock"])]
         rows = inventory_rows(filtered)
-        st.dataframe(rows, hide_index=True, width="stretch")
+        view = st.radio("Vista de inventario", ["Con fotos", "Tabla"], horizontal=True)
+        if view == "Tabla":
+            st.dataframe(rows, hide_index=True, width="stretch")
+        else:
+            pages = max(1, (len(filtered) + 11) // 12)
+            page = st.selectbox("Página de inventario", range(1, pages + 1)) if pages > 1 else 1
+            with st.container(horizontal=True, key="inventory_grid"):
+                for p in filtered[(page-1)*12:page*12]:
+                    with st.container(border=True, width=280, key=f"inventory_card_{p['sku']}"):
+                        product_summary(p)
+                        st.button("Editar artículo", key=f"edit_{p['sku']}", on_click=open_inventory, args=(p["sku"], "Editar artículo"), width="stretch")
+                        st.button("Reponer / ajustar", key=f"stock_{p['sku']}", on_click=open_inventory, args=(p["sku"], "Reponer / ajustar"), width="stretch")
+            if not filtered:
+                st.info("No hay artículos para estos filtros.")
         st.caption(f"{len(filtered)} de {len(items)} referencias")
         st.download_button("Exportar inventario CSV", csv_export(rows), "inventario.csv", "text/csv")
         return
-    sku = st.selectbox("Selecciona el artículo", [p["sku"] for p in items],
+    sku = st.selectbox("Selecciona el artículo", [p["sku"] for p in items], key="inventory_sku",
                        format_func=lambda x: next(f"{p['sku']} · {p['name']}" for p in items if p["sku"] == x))
     if not sku:
         return
     p = db.get_product(sku)
+    product_summary(p)
     if action == "Editar artículo":
         st.caption(f"Existencias actuales: {p['stock']}. Para cambiarlas utiliza «Reponer / ajustar».")
         snapshot = st.session_state.get("editing_product")

@@ -15,7 +15,7 @@ from uuid import uuid4
 from PIL import Image, ImageOps
 from sqlalchemy import (Boolean, CheckConstraint, Column, Integer, LargeBinary,
                         MetaData, String, Table, Text, create_engine, event,
-                        insert, select, update)
+                        insert, select, update, delete, ForeignKey)
 from sqlalchemy.exc import IntegrityError
 
 ROOT = Path(__file__).resolve().parent
@@ -29,6 +29,10 @@ products = Table("products", metadata,
     Column("source_page", Integer), Column("notes", Text, nullable=False, default=""),
     Column("active", Boolean, nullable=False, default=True), Column("version", Integer, nullable=False, default=1),
     CheckConstraint("stock >= 0"), CheckConstraint("price_cents >= 0"), CheckConstraint("low_stock >= 0"))
+product_photos = Table("product_photos", metadata,
+    Column("id", String(36), primary_key=True),
+    Column("sku", String(60), ForeignKey("products.sku"), nullable=False, index=True),
+    Column("position", Integer, nullable=False), Column("image_data", LargeBinary, nullable=False))
 sales = Table("sales", metadata,
     Column("id", String(36), primary_key=True), Column("request_key", String(80), nullable=False, unique=True),
     Column("created_at", String(40), nullable=False), Column("customer", String(200), nullable=False),
@@ -169,7 +173,12 @@ class Inventory:
                 raise InventoryError("El artículo ya no existe.")
             return dict(row)
 
-    def save_product(self, item, expected_version=None, image=None):
+    def list_photos(self, sku):
+        with self.engine.connect() as conn:
+            return [dict(r) for r in conn.execute(select(product_photos).where(product_photos.c.sku == sku)
+                                                 .order_by(product_photos.c.position)).mappings()]
+
+    def save_product(self, item, expected_version=None, image=None, real_photos=None):
         values = {k: str(item.get(k, "")).strip() for k in ("sku", "name", "compatibility", "brand", "category", "notes")}
         values["sku"] = values["sku"].upper()
         if not values["sku"] or len(values["sku"]) > 60 or not all(c.isalnum() or c in "-_" for c in values["sku"]):
@@ -183,6 +192,10 @@ class Inventory:
             low_stock=integer(item.get("low_stock", 5), "Alerta de existencias"), active=bool(item.get("active", True)))
         if image is not None:
             values["image_data"] = clean_image(image)
+        if real_photos is not None:
+            if len(real_photos) > 8:
+                raise InventoryError("Puedes guardar hasta 8 fotos reales por artículo.")
+            real_photos = [clean_image(raw) for raw in real_photos]
         try:
             with self.engine.begin() as conn:
                 if expected_version is None:
@@ -194,6 +207,11 @@ class Inventory:
                         products.c.version == expected_version).values(**values, version=products.c.version + 1))
                     if changed.rowcount != 1:
                         raise InventoryError("Este artículo cambió. Actualiza la página y vuelve a guardar.")
+                if real_photos is not None:
+                    conn.execute(delete(product_photos).where(product_photos.c.sku == values["sku"]))
+                    for position, raw in enumerate(real_photos):
+                        conn.execute(insert(product_photos).values(id=str(uuid4()), sku=values["sku"],
+                                                                  position=position, image_data=raw))
         except IntegrityError:
             raise InventoryError("Esa referencia ya existe. Usa una referencia diferente.") from None
 
@@ -309,8 +327,8 @@ class Inventory:
             with conn.begin():
                 if self.engine.dialect.name == "sqlite":
                     conn.exec_driver_sql("BEGIN")
-                out = {"schema_version": 1, "created_at": now(), "tables": {}}
-                for table in (products, sales, sale_items, movements, settings):
+                out = {"schema_version": 2, "created_at": now(), "tables": {}}
+                for table in (products, sales, sale_items, movements, settings, product_photos):
                     rows = [dict(r) for r in conn.execute(select(table)).mappings()]
                     for row in rows:
                         for key, value in row.items():
@@ -322,14 +340,14 @@ class Inventory:
     def restore_into_empty(self, raw):
         """Restores an exported backup into a NEW database only, never overwrites sales."""
         content = json.loads(raw)
-        if content.get("schema_version") != 1:
+        if content.get("schema_version") not in (1, 2):
             raise InventoryError("Versión de respaldo no compatible.")
         with self.engine.begin() as conn:
-            for table in (products, sales, sale_items, movements, settings):
+            for table in (products, sales, sale_items, movements, settings, product_photos):
                 if conn.execute(select(table).limit(1)).first():
                     raise InventoryError("La restauración necesita una base nueva y vacía.")
-            for table in (products, sales, sale_items, movements, settings):
-                rows = content["tables"][table.name]
+            for table in (products, sales, sale_items, movements, settings, product_photos):
+                rows = content["tables"].get(table.name, []) if table is product_photos and content["schema_version"] == 1 else content["tables"][table.name]
                 for row in rows:
                     for key, value in row.items():
                         if isinstance(value, dict) and "base64" in value:

@@ -2,6 +2,19 @@
 
 Fecha de última verificación: 14 de septiembre de 2026.
 
+## Inventario visual y fotos reales
+
+- 33 pruebas automatizadas aprobadas. Cobertura nueva: persistencia de varias fotos, sustitución y eliminación, validación de imágenes, guardado atómico ante errores y versiones desactualizadas, respaldo/restauración y compatibilidad con respaldos anteriores.
+- Chrome con base temporal: acceso desde tarjeta a edición, subida múltiple con vista previa, guardado, carrete en carrito, zoom al pasar el mouse y ancho del carrete a 1440 y 390 píxeles.
+- La tabla adicional `product_photos` se crea al iniciar la app; no altera las existencias. Los nuevos respaldos usan versión 2; se siguen admitiendo respaldos de versión 1.
+
+## Carrito visual y ticket para el cliente
+
+- 30 pruebas automatizadas: confirmación, descarga disponible, PNG válido, nombres largos y omisión de notas y datos privados en el ticket.
+- Chrome: fotos y tarjetas dentro de pantalla a 1440 y 390 píxeles; venta en SQLite temporal y descarga automática de un archivo PNG confirmadas.
+- El ticket se genera desde los importes históricos de la venta y se puede descargar nuevamente en Ventas. Las ventas anuladas generan una imagen marcada como anulada.
+- La descarga automática depende de las políticas del navegador; queda un botón de descarga manual. No se realizaron ventas en la app publicada.
+
 ## Corrección de iconos y vistas
 
 - **29 pruebas automatizadas aprobadas** con Python 3.12, Streamlit 1.63.0 y SQLAlchemy 2.0.52 (`.venv/Scripts/python -m pytest tests -q`).
