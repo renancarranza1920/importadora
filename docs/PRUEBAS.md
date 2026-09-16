@@ -2,6 +2,14 @@
 
 Fecha de última verificación: 16 de septiembre de 2026.
 
+## Pedidos públicos y solicitudes privadas
+
+- 45 pruebas aprobadas en SQLite temporal: registro sin modificar stock, reintentos sin duplicar solicitudes, enlace WhatsApp al destino correcto, agotados, cambios de precio, ajustes, alternativas, cancelación y conversión a venta con ticket.
+- Dos conversiones simultáneas de la misma solicitud producen una sola venta. La falta de stock revierte también el cambio de estado de la solicitud. Se conserva el pedido original.
+- Respaldo versión 3 incluye solicitudes y admite restaurar versiones 1 y 2. Límites por sesión y validación de contacto cubiertos.
+- Chrome a 390 px: carrito público, formulario, enlace de WhatsApp inspeccionado sin enviar mensajes, bandeja privada y confirmación de venta con descarga PNG.
+- No se realizaron pruebas de escritura en la base publicada ni en PostgreSQL. Los cambios requieren subir los archivos y reiniciar Streamlit.
+
 ## Bordes y encuadre de fotos
 
 - 36 pruebas aprobadas. Nuevas comprobaciones del guardado y reapertura del encuadre, límites de zoom, conservación de existencias y restauración del encuadre desde respaldo.

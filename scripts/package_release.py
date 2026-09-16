@@ -5,7 +5,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 files = [".gitignore", ".streamlit/config.toml", ".streamlit/secrets.toml.example",
-         "README.md", "INICIAR_APP.bat", "app.py", "auth.py", "inventory.py", "ticket.py", "styles.css",
+         "README.md", "INICIAR_APP.bat", "app.py", "auth.py", "inventory.py", "ticket.py", "order_views.py", "styles.css",
          "requirements.txt", "requirements-dev.txt", "data/catalog_seed.json"]
 for folder, pattern in (("assets/products", "*"), ("docs", "*.md"), ("scripts", "*.py"), ("tests", "*.py")):
     files.extend(p.relative_to(ROOT).as_posix() for p in (ROOT / folder).glob(pattern) if p.is_file())

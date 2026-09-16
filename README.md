@@ -24,7 +24,17 @@ La base local está en `data/inventory.db`. Reiniciar la app no vuelve a cargar 
 - Registrar entradas o salidas justificadas y consultar su historial.
 - Exportar inventario, ventas y movimientos en CSV, y un respaldo completo en JSON.
 
-## Publicar gratis y abrir desde tu celular
+## Pedidos públicos por WhatsApp
+
+Comparte `https://importadora-myrr4sgdikyma8ew9bmgcm.streamlit.app/?vista=pedidos` después de actualizar la app. Con `PUBLIC_CATALOG = true`, el cliente puede agregar productos sin iniciar sesión, revisar **Mi pedido**, indicar su nombre y WhatsApp y registrar una solicitud. Después debe tocar **Continuar en WhatsApp** y enviar el mensaje al **+503 7311 3611**. La app no envía mensajes automáticamente ni sabe si fueron enviados. No se muestran indicaciones de envío ni del tipo de tienda.
+
+En administración, entra a **Solicitudes**: filtra por estado o cliente, revisa fotos y disponibilidad, usa **Usar disponibles**, quita artículos con cantidad cero o agrega una alternativa. Guarda los ajustes y acuerda los cambios con el cliente; puedes abrir su WhatsApp con el resumen revisado y marcarlo como contactado. Las solicitudes no reservan ni descuentan unidades.
+
+Para cerrar, confirma que el cliente aceptó y que recibiste el pago. La venta verifica nuevamente stock y precios, descuenta unidades y genera el ticket PNG en una sola confirmación. Si otra sesión ya confirmó o cambió el pedido, no se duplica la venta. Una solicitud cancelada no puede convertirse en venta; una venta ya registrada se anula desde **Ventas**, manteniendo el historial.
+
+El pedido original y la última revisión se conservan en la base y los respaldos (versión 3, compatible al restaurar respaldos anteriores). Solo el administrador ve la bandeja; el cliente solo ve el pedido registrado en su propia sesión. El carrito sin registrar no sobrevive necesariamente a un cierre o reinicio. Se admiten hasta 20 referencias por pedido y cinco solicitudes por sesión en diez minutos; este límite no sustituye protección avanzada contra abuso.
+
+## Publicación
 
 Sigue **[la guía para publicar en internet](docs/PUBLICAR_EN_INTERNET.md)**. La combinación preparada es Streamlit Community Cloud para ejecutar la app y PostgreSQL en Neon para conservar tus datos.
 
@@ -48,6 +58,7 @@ Las pruebas crean bases temporales; no modifican el inventario real. Ver [PRUEBA
 | `app.py` | Pantallas y formularios de Streamlit |
 | `inventory.py` | Base de datos y transacciones de ventas |
 | `auth.py` | Autenticación y límite de intentos |
+| `order_views.py` | Carrito público, enlace a WhatsApp y revisión privada de solicitudes |
 | `ticket.py` | Ticket PNG para el cliente a partir de la venta confirmada |
 | `data/catalog_seed.json` | Catálogo inicial auditado con huella del PDF |
 | `assets/products/` | 24 imágenes originales, una por referencia |

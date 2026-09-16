@@ -26,7 +26,7 @@ También puedes subir los archivos desde la web de GitHub a un repositorio priva
 
 Incluye estos archivos y carpetas:
 
-- `app.py`, `inventory.py`, `auth.py`, `ticket.py`, `styles.css` y `requirements.txt`.
+- `app.py`, `inventory.py`, `auth.py`, `ticket.py`, `order_views.py`, `styles.css` y `requirements.txt`.
 - `data/catalog_seed.json` y toda la carpeta `assets/`.
 - `.streamlit/config.toml` y `.streamlit/secrets.toml.example`.
 - `.gitignore`, `README.md`, `docs/`, `scripts/`, `tests/`, `requirements-dev.txt` e `INICIAR_APP.bat`.

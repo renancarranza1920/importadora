@@ -18,6 +18,7 @@ import streamlit.components.v1 as components
 from sqlalchemy.exc import SQLAlchemyError
 
 import auth
+from order_views import public_order, inquiries_page
 from ticket import ticket_png
 from inventory import Inventory, InventoryError, ROOT, cents, clean_image
 
@@ -120,7 +121,7 @@ def photo_markup(product):
         x = max(0, min(100, int(product.get("image_x", 50))))
         y = max(0, min(100, int(product.get("image_y", 50))))
         return (f'<div class="product-photo" tabindex="0" aria-label="Ampliar foto de {escape(product["name"])}" '
-                f'style="--photo-zoom:{zoom};--photo-hover:{zoom * 1.65};--photo-x:{x}%;--photo-y:{y}%">'
+                f'style="--photo-zoom:{zoom};--photo-hover:{zoom * 1.08};--photo-x:{x}%;--photo-y:{y}%">'
                 f'<img alt="{escape(product["name"])}" src="data:{mime};base64,{base64.b64encode(raw).decode()}"></div>')
     return '<div class="product-photo"><span style="font-size:52px">◇</span></div>'
 
@@ -237,6 +238,19 @@ def catalogue(seller):
                         new_cart_key()
                         st.toast(f"{p['sku']} agregado")
                         st.rerun()
+                else:
+                    requested = st.session_state["public_cart"].get(p["sku"], {}).get("quantity", 0)
+                    if st.button("Agregar a mi pedido" if not requested else f"Agregar otra · {requested} en mi pedido",
+                                 key=f"request_add_{p['sku']}", width="stretch", disabled=requested >= min(p["stock"], 10000)):
+                        cart = st.session_state["public_cart"]
+                        if p["sku"] not in cart and len(cart) >= 20:
+                            st.warning("Puedes incluir hasta 20 referencias por pedido.")
+                        else:
+                            cart[p["sku"]] = dict(quantity=requested + 1, price_cents=cart.get(p["sku"], {}).get("price_cents", p["price_cents"]), name=p["name"])
+                            st.session_state.pop(f"request_qty_public_{p['sku']}", None)
+                            st.session_state["public_request"] = str(uuid4())
+                            st.toast("Producto agregado a tu pedido")
+                            st.rerun()
     st.caption("Disponibilidad informativa hasta confirmar la venta. Las compatibilidades proceden del catálogo suministrado.")
 
 
@@ -284,7 +298,7 @@ def sale_view(sale):
 def cart_page():
     title("Punto de venta", "Tu próxima venta", "Revisa las unidades y confirma cuando hayas recibido el pago.")
     if st.session_state.get("last_sale"):
-        with st.expander("Última venta registrada", expanded=not st.session_state["cart"]):
+        with st.expander("Última venta registrada", expanded=bool(st.session_state.get("download_sale")) or not st.session_state["cart"]):
             sale_view(db.get_sale(st.session_state["last_sale"]))
     cart = st.session_state["cart"]
     if not cart:
@@ -578,16 +592,26 @@ if not seller:
 st.session_state.setdefault("cart", {})
 st.session_state.setdefault("sale_request", str(uuid4()))
 st.session_state.setdefault("adjust_request", str(uuid4()))
+st.session_state.setdefault("public_cart", {})
+st.session_state.setdefault("public_request", str(uuid4()))
+st.session_state.setdefault("public_source", str(uuid4()))
+if "next_nav" in st.session_state:
+    st.session_state["nav"] = st.session_state.pop("next_nav")
+if "nav" not in st.session_state and PUBLIC and st.query_params.get("vista") == "pedidos":
+    st.session_state["nav"] = "Catálogo"
 
 with st.sidebar:
     st.html(f'<div class="brand"><span class="brand-icon">▧</span>{escape(BUSINESS)}</div><div class="brand-sub">CATÁLOGO & INVENTARIO</div>')
     st.caption("TU ESPACIO DE TRABAJO" if seller else "EXPLORA LA COLECCIÓN")
-    options = ["Catálogo", "Nueva venta", "Inventario", "Ventas", "Movimientos", "Ayuda y respaldo"] if seller else (["Catálogo", "Acceso administrador"] if PUBLIC else ["Acceso administrador"])
+    options = ["Catálogo", "Nueva venta", "Inventario", "Solicitudes", "Ventas", "Movimientos", "Ayuda y respaldo"] if seller else (["Catálogo", "Mi pedido", "Acceso administrador"] if PUBLIC else ["Acceso administrador"])
     if st.session_state.get("nav") not in options:
         st.session_state["nav"] = options[0]
-    icons = {"Catálogo": "▦", "Nueva venta": "+", "Inventario": "▤", "Ventas": "↗", "Movimientos": "⇄", "Ayuda y respaldo": "ⓘ", "Acceso administrador": "↪"}
+    icons = {"Catálogo": "▦", "Nueva venta": "+", "Inventario": "▤", "Ventas": "↗", "Movimientos": "⇄", "Ayuda y respaldo": "ⓘ", "Acceso administrador": "↪", "Mi pedido": "+", "Solicitudes": "▤"}
     current = st.radio("Navegación", options, key="nav", label_visibility="collapsed",
                        format_func=lambda x: f"{icons[x]}  {x}")
+    if not seller and PUBLIC:
+        count = sum(i["quantity"] for i in st.session_state["public_cart"].values())
+        st.button(f"Ver mi pedido · {count} unidades", on_click=lambda: st.session_state.update(nav="Mi pedido"), width="stretch", type="primary")
     if seller:
         count = sum(r["quantity"] for r in st.session_state["cart"].values())
         st.divider()
@@ -603,10 +627,16 @@ with st.sidebar:
 if st.session_state.get("flash"):
     st.success(st.session_state.pop("flash"))
 try:
+    if not seller and PUBLIC and current == "Catálogo" and st.session_state["public_cart"]:
+        st.button("Revisar mi pedido", on_click=lambda: st.session_state.update(nav="Mi pedido"), width="stretch", type="primary")
     if current == "Acceso administrador":
         login_page()
     elif current == "Catálogo" and (PUBLIC or seller):
         catalogue(seller)
+    elif current == "Mi pedido" and PUBLIC and not seller:
+        public_order(db, product_summary, photo_reel)
+    elif current == "Solicitudes" and seller:
+        inquiries_page(db, product_summary, sale_view, photo_reel)
     elif seller:
         {"Nueva venta": cart_page, "Inventario": inventory_page, "Ventas": sales_page,
          "Movimientos": movements_page, "Ayuda y respaldo": help_page}[current]()

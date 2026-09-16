@@ -7,7 +7,7 @@ import hmac
 import io
 import json
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from uuid import uuid4
@@ -15,7 +15,7 @@ from uuid import uuid4
 from PIL import Image, ImageOps
 from sqlalchemy import (Boolean, CheckConstraint, Column, Integer, LargeBinary,
                         MetaData, String, Table, Text, create_engine, event,
-                        insert, select, update, delete, ForeignKey)
+                        insert, select, update, delete, ForeignKey, func)
 from sqlalchemy.exc import IntegrityError
 
 ROOT = Path(__file__).resolve().parent
@@ -54,6 +54,13 @@ settings = Table("settings", metadata,
     Column("key", String(80), primary_key=True), Column("value", Text, nullable=False))
 auth_attempts = Table("auth_attempts", metadata,
     Column("id", String(36), primary_key=True), Column("at", Integer, nullable=False, index=True))
+inquiries = Table("inquiries", metadata,
+    Column("id", String(36), primary_key=True), Column("created_at", String(40), nullable=False),
+    Column("request_key", String(80), nullable=False, unique=True), Column("source", String(80), nullable=False),
+    Column("customer", String(200), nullable=False), Column("phone", String(30), nullable=False),
+    Column("items", Text, nullable=False), Column("original_items", Text, nullable=False),
+    Column("status", String(20), nullable=False), Column("version", Integer, nullable=False),
+    Column("sale_id", String(36)))
 
 
 class InventoryError(ValueError):
@@ -248,7 +255,7 @@ class Inventory:
                     return
             raise
 
-    def confirm_sale(self, cart, customer, payment, notes, request_key):
+    def confirm_sale(self, cart, customer, payment, notes, request_key, inquiry_id=None, inquiry_version=None):
         """Conditional UPDATE serializes competing buyers; the whole cart commits or rolls back."""
         if not cart or not request_key or len(request_key) > 80:
             raise InventoryError("Agrega al menos un artículo a la venta.")
@@ -257,12 +264,23 @@ class Inventory:
         customer = customer.strip() or "Cliente general"
         if len(customer) > 200 or len(notes) > 3000:
             raise InventoryError("Acorta el nombre del cliente o las notas.")
+        if inquiry_id:
+            request_key = f"inquiry:{inquiry_id}"
         sale_id = str(uuid4())
         try:
             with self.engine.begin() as conn:
                 old = conn.execute(select(sales.c.id).where(sales.c.request_key == request_key)).scalar_one_or_none()
                 if old:
                     return old
+                if inquiry_id:
+                    row = conn.execute(select(inquiries).where(inquiries.c.id == inquiry_id)).mappings().first()
+                    if not row or json.loads(row["items"]) != cart:
+                        raise InventoryError("Guarda y revisa los cambios de la solicitud antes de confirmar.")
+                    claimed = conn.execute(update(inquiries).where(inquiries.c.id == inquiry_id,
+                        inquiries.c.version == inquiry_version, inquiries.c.status.in_(["pending", "contacted"]))
+                        .values(status="converted", sale_id=sale_id, version=inquiries.c.version + 1))
+                    if claimed.rowcount != 1:
+                        raise InventoryError("La solicitud cambió o ya está cerrada. Actualiza la lista.")
                 conn.execute(insert(sales).values(id=sale_id, request_key=request_key, created_at=now(),
                     customer=customer, payment=payment, notes=notes.strip(), total_cents=0, status="confirmed"))
                 total = 0
@@ -330,6 +348,62 @@ class Inventory:
         with self.engine.connect() as conn:
             return [dict(r) for r in conn.execute(query).mappings()]
 
+    def create_inquiry(self, cart, customer, phone, request_key, source):
+        customer, phone = customer.strip(), phone.strip()
+        if not customer or len(customer) > 200 or len(phone) > 30 or not 8 <= sum(c.isdigit() for c in phone) <= 15 or not all(c.isdigit() or c in "+ -()" for c in phone):
+            raise InventoryError("Escribe tu nombre y un número de contacto válido.")
+        if not request_key or len(request_key) > 80 or not source or len(source) > 80:
+            raise InventoryError("Vuelve a abrir el pedido e inténtalo de nuevo.")
+        if not cart or len(cart) > 20:
+            raise InventoryError("El pedido debe contener entre 1 y 20 referencias.")
+        try:
+            with self.engine.begin() as conn:
+                old = conn.execute(select(inquiries).where(inquiries.c.request_key == request_key)).mappings().first()
+                if old:
+                    return dict(old)
+                since = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat(timespec="microseconds")
+                count = conn.execute(select(func.count()).select_from(inquiries).where(inquiries.c.source == source,
+                                    inquiries.c.created_at >= since)).scalar_one()
+                if count >= 5:
+                    raise InventoryError("Ya registraste varios pedidos. Espera unos minutos antes de crear otro.")
+                snapshot = {}
+                for sku, entry in cart.items():
+                    qty = integer(entry["quantity"], "Cantidad", minimum=1, maximum=10000)
+                    p = conn.execute(select(products).where(products.c.sku == sku)).mappings().first()
+                    if not p or not p["active"] or p["stock"] < qty or p["price_cents"] != entry["price_cents"]:
+                        raise InventoryError(f"{sku}: cambiaron precio o existencias. Revisa el pedido.")
+                    snapshot[sku] = {"quantity": qty, "price_cents": p["price_cents"], "name": p["name"]}
+                row = dict(id=str(uuid4()), created_at=now(), request_key=request_key, source=source,
+                           customer=customer, phone=phone, items=json.dumps(snapshot), original_items=json.dumps(snapshot),
+                           status="pending", version=1, sale_id=None)
+                conn.execute(insert(inquiries).values(**row))
+                return row
+        except IntegrityError:
+            with self.engine.connect() as conn:
+                old = conn.execute(select(inquiries).where(inquiries.c.request_key == request_key)).mappings().first()
+                if old:
+                    return dict(old)
+            raise
+
+    def list_inquiries(self):
+        with self.engine.connect() as conn:
+            return [dict(r) for r in conn.execute(select(inquiries).order_by(inquiries.c.created_at.desc())).mappings()]
+
+    def update_inquiry(self, inquiry_id, version, cart, status):
+        if status not in ("pending", "contacted", "cancelled") or len(cart) > 20:
+            raise InventoryError("Estado o cantidad de referencias no válido.")
+        if not cart and status != "cancelled":
+            raise InventoryError("Conserva al menos un artículo o cancela la solicitud.")
+        for item in cart.values():
+            integer(item["quantity"], "Cantidad", minimum=1, maximum=10000)
+            integer(item["price_cents"], "Precio", maximum=999999999)
+        with self.engine.begin() as conn:
+            result = conn.execute(update(inquiries).where(inquiries.c.id == inquiry_id, inquiries.c.version == version,
+                inquiries.c.status.in_(["pending", "contacted"]))
+                .values(items=json.dumps(cart), status=status, version=inquiries.c.version + 1))
+            if result.rowcount != 1:
+                raise InventoryError("La solicitud cambió en otra sesión o ya está cerrada. Actualiza la lista.")
+
     def backup(self):
         # Read a consistent database snapshot, including embedded uploaded images.
         with self.engine.connect() as conn:
@@ -338,8 +412,8 @@ class Inventory:
             with conn.begin():
                 if self.engine.dialect.name == "sqlite":
                     conn.exec_driver_sql("BEGIN")
-                out = {"schema_version": 2, "created_at": now(), "tables": {}}
-                for table in (products, sales, sale_items, movements, settings, product_photos):
+                out = {"schema_version": 3, "created_at": now(), "tables": {}}
+                for table in (products, sales, sale_items, movements, settings, product_photos, inquiries):
                     rows = [dict(r) for r in conn.execute(select(table)).mappings()]
                     for row in rows:
                         for key, value in row.items():
@@ -351,14 +425,15 @@ class Inventory:
     def restore_into_empty(self, raw):
         """Restores an exported backup into a NEW database only, never overwrites sales."""
         content = json.loads(raw)
-        if content.get("schema_version") not in (1, 2):
+        if content.get("schema_version") not in (1, 2, 3):
             raise InventoryError("Versión de respaldo no compatible.")
         with self.engine.begin() as conn:
-            for table in (products, sales, sale_items, movements, settings, product_photos):
+            for table in (products, sales, sale_items, movements, settings, product_photos, inquiries):
                 if conn.execute(select(table).limit(1)).first():
                     raise InventoryError("La restauración necesita una base nueva y vacía.")
-            for table in (products, sales, sale_items, movements, settings, product_photos):
-                rows = content["tables"].get(table.name, []) if table is product_photos and content["schema_version"] == 1 else content["tables"][table.name]
+            for table in (products, sales, sale_items, movements, settings, product_photos, inquiries):
+                optional = (table is product_photos and content["schema_version"] == 1) or (table is inquiries and content["schema_version"] < 3)
+                rows = content["tables"].get(table.name, []) if optional else content["tables"][table.name]
                 for row in rows:
                     for key, value in row.items():
                         if isinstance(value, dict) and "base64" in value:
