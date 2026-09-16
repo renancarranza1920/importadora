@@ -116,7 +116,12 @@ def photo_markup(product):
     raw = product_image(product)
     if raw:
         mime = "image/png" if raw[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
-        return f'<div class="product-photo"><img alt="{escape(product["name"])}" src="data:{mime};base64,{base64.b64encode(raw).decode()}"></div>'
+        zoom = max(100, min(200, int(product.get("image_zoom", 115)))) / 100
+        x = max(0, min(100, int(product.get("image_x", 50))))
+        y = max(0, min(100, int(product.get("image_y", 50))))
+        return (f'<div class="product-photo" tabindex="0" aria-label="Ampliar foto de {escape(product["name"])}" '
+                f'style="--photo-zoom:{zoom};--photo-hover:{zoom * 1.65};--photo-x:{x}%;--photo-y:{y}%">'
+                f'<img alt="{escape(product["name"])}" src="data:{mime};base64,{base64.b64encode(raw).decode()}"></div>')
     return '<div class="product-photo"><span style="font-size:52px">◇</span></div>'
 
 
@@ -351,8 +356,16 @@ def product_form(product=None):
     identity = f"{p['sku']}_{p['version']}" if product else f"new_{st.session_state.get('new_product_revision', 0)}"
     st.subheader("Fotografías del artículo")
     photo = st.file_uploader("Foto del artículo (máximo 5 MB)", type=["jpg", "jpeg", "png", "webp"], key=f"cover_{identity}")
-    if photo:
-        st.image(clean_image(photo.getvalue()), caption="Vista previa de la foto principal", width=240)
+    with st.container(border=True, key="image_editor"):
+        st.markdown("**Encuadre de la foto en las tarjetas**")
+        zoom = st.slider("Zoom de la imagen (%)", 100, 200, int(p.get("image_zoom", 115)), step=5, key=f"zoom_{identity}")
+        x = st.slider("Centro horizontal (%)", 0, 100, int(p.get("image_x", 50)), key=f"image_x_{identity}")
+        y = st.slider("Centro vertical (%)", 0, 100, int(p.get("image_y", 50)), key=f"image_y_{identity}")
+        preview = dict(p, image_zoom=zoom, image_x=x, image_y=y)
+        if photo:
+            preview["image_data"] = clean_image(photo.getvalue())
+        st.html('<div class="image-preview">' + photo_markup(preview) + '</div>')
+        st.caption("100 % muestra la imagen completa. Ajusta el centro para ampliar la zona deseada. Se aplica al catálogo, inventario y carrito al guardar.")
     existing = db.list_photos(p["sku"]) if product else []
     if existing:
         photo_reel([r["image_data"] for r in existing])
@@ -381,7 +394,8 @@ def product_form(product=None):
         active = st.checkbox("Artículo activo en el catálogo", value=p["active"])
         if st.form_submit_button("Guardar cambios" if product else "Crear artículo", type="primary"):
             db.save_product(dict(sku=sku, name=name, compatibility=compatibility, brand=brand, category=category,
-                price_cents=cents(f"{price:.2f}"), low_stock=int(low), stock=int(stock), notes=notes, active=active),
+                price_cents=cents(f"{price:.2f}"), low_stock=int(low), stock=int(stock), notes=notes, active=active,
+                image_zoom=zoom, image_x=x, image_y=y),
                 expected_version=p["version"] if product else None, image=photo.getvalue() if photo else None,
                 real_photos=([r["image_data"] for r in existing if r["id"] not in removed] + prepared) if uploads or removed else None)
             st.session_state.pop("editing_product", None)

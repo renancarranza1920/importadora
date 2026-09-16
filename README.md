@@ -58,6 +58,8 @@ Las pruebas crean bases temporales; no modifican el inventario real. Ver [PRUEBA
 
 ## Detalles de operación
 
+Para ajustar una fotografía: **Inventario → Editar artículo → Encuadre de la foto en las tarjetas**. Ajusta zoom (100–200 %) y centro horizontal/vertical, revisa la vista previa y pulsa **Guardar cambios**. El encuadre se conserva por producto en catálogo, inventario y carrito, sin modificar la imagen original. El zoom inicial es 115 %; al pasar el mouse o enfocar la imagen con el teclado se amplía más.
+
 Los precios se guardan en centavos enteros. Una venta se registra junto con sus movimientos en una sola transacción: si cualquier artículo no tiene stock, se rechaza la venta completa. Una clave única evita descontar dos veces la misma confirmación. Las fotos nuevas se guardan en la base, para que no dependan del disco temporal del servidor.
 
 El acceso de administrador dura hasta 12 horas; cerrarlo borra el carrito de esa sesión. El carrito aún no confirmado vive en la sesión del navegador y no reserva unidades. Las ventas confirmadas permanecen en la base. El catálogo vuelve a consultar existencias cada 30 segundos; al confirmar siempre comprueba nuevamente stock y precios.

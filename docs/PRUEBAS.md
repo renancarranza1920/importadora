@@ -1,6 +1,13 @@
 # Verificación de IMPORTADORA
 
-Fecha de última verificación: 14 de septiembre de 2026.
+Fecha de última verificación: 16 de septiembre de 2026.
+
+## Bordes y encuadre de fotos
+
+- 36 pruebas aprobadas. Nuevas comprobaciones del guardado y reapertura del encuadre, límites de zoom, conservación de existencias y restauración del encuadre desde respaldo.
+- Chrome local a 1440 y 390 píxeles: formularios con bordes, campos de texto, cantidades, selector de pago y notas. Editor con vista previa; zoom guardado al 150 % y ampliación al pasar el mouse en carrito al 247,5 %.
+- La preferencia por producto se guarda en `settings` dentro de la misma transacción de edición; no requiere cambiar las tablas existentes. Las imágenes originales se conservan.
+- La lectura de la URL publicada no estuvo disponible; la comprobación se realizó sobre el proyecto local con una base temporal.
 
 ## Actualización del recurso de base de datos
 

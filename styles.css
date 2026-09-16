@@ -41,7 +41,23 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 [data-testid="stMetricLabel"] {color:#788980;font-size:12px;}
 .stButton button {min-height:43px;border-radius:10px;}
 .stDownloadButton button {min-height:43px;}
-[data-testid="stForm"] {background:white;}
+[data-testid="stForm"],.st-key-image_editor {background:white;border:1.5px solid #9eb5aa!important;border-radius:18px;padding:24px;box-shadow:0 4px 16px #183d2f08;}
+[data-baseweb="input"],[data-baseweb="textarea"],
+[data-testid="stTextInputRootElement"],[data-testid="stTextAreaRootElement"],
+[data-testid="stSelectbox"] .react-aria-ComboBox > [role="group"],
+[data-testid="stMultiSelect"] .react-aria-ComboBox > [role="group"],
+[data-testid="stDateInput"] [role="group"],
+[data-baseweb="select"] > div,[data-testid="stNumberInputContainer"] {border:1.5px solid #9aafa4!important;border-radius:10px!important;background:#fff;}
+[data-baseweb="input"]:focus-within,[data-baseweb="textarea"]:focus-within,
+[data-testid="stTextInputRootElement"]:focus-within,[data-testid="stTextAreaRootElement"]:focus-within,
+[data-testid="stSelectbox"] .react-aria-ComboBox > [role="group"]:focus-within,
+[data-testid="stMultiSelect"] .react-aria-ComboBox > [role="group"]:focus-within,
+[data-testid="stDateInput"] [role="group"]:focus-within,
+[data-baseweb="select"]:focus-within > div,[data-testid="stNumberInputContainer"]:focus-within {border-color:#137b60!important;box-shadow:0 0 0 3px #137b6024;}
+[data-testid="stFileUploaderDropzone"] {border:1.5px dashed #8aa597!important;border-radius:12px;background:#f8fbf9;}
+[data-testid="stExpander"] {border-color:#a6bbb0!important;}
+.image-preview {max-width:320px;margin:16px auto;}
+.image-preview .product-photo {height:240px;}
 .side-note {background:#f1f6f3;border-radius:13px;padding:15px;color:#5d796b;font-size:12px;line-height:1.7;margin-top:25px;}
 .empty-state {text-align:center;padding:55px 20px;background:white;border:1px dashed #cbdad1;border-radius:20px;margin:15px 0;color:#789083;}
 .empty-state strong {display:block;color:#244b3a;font-size:23px;margin-bottom:8px;}
@@ -63,12 +79,19 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 .photo-reel figure {flex:0 0 min(260px,85%);margin:0;overflow:hidden;scroll-snap-align:start;border-radius:14px;background:#f3f5f4;}
 .photo-reel img {width:100%;height:230px;object-fit:contain;transition:transform .25s ease;}
 .photo-reel figcaption {position:relative;background:#f3f5f4;padding:10px;text-align:center;font-size:12px;}
-.product-photo img {transition:transform .25s ease;}
-@media (hover:hover) and (prefers-reduced-motion:no-preference) {
- .product-photo:hover img,.photo-reel figure:hover img {transform:scale(1.65);cursor:zoom-in;}
+.product-photo img {transform:scale(var(--photo-zoom,1.15));transform-origin:var(--photo-x,50%) var(--photo-y,50%);transition:transform .25s ease;}
+@media (hover:hover) {
+ .product-photo:hover img {transform:scale(var(--photo-hover,1.9));cursor:zoom-in;}
+ .photo-reel figure:hover img {transform:scale(1.8);cursor:zoom-in;}
+}
+.product-photo:focus-visible img {transform:scale(var(--photo-hover,1.9));}
+.product-photo:focus-visible {outline:3px solid #137b60;outline-offset:3px;}
+@media (prefers-reduced-motion:reduce) {
+ .product-photo img,.photo-reel img {transition:none;}
 }
 .photo-reel figure:focus-visible img {transform:scale(1.5);}
 @media(max-width:640px) {
+ [data-testid="stForm"],.st-key-image_editor {padding:16px;}
  .cart-product {grid-template-columns:100px minmax(0,1fr);gap:14px;}
  .cart-product .product-photo {height:120px;}
  .cart-product .product-title {font-size:18px;}

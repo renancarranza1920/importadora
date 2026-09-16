@@ -48,3 +48,20 @@ def test_photo_errors_leave_product_unchanged(tmp_path):
     with pytest.raises(InventoryError):
         db.save_product(p, p["version"], real_photos=[photo()])
     assert not db.list_photos(p["sku"])
+
+
+def test_image_framing_persists_and_is_backed_up(tmp_path):
+    db = Inventory(f"sqlite:///{(tmp_path / 'framing.db').as_posix()}")
+    db.seed()
+    p = db.get_product("A06-01")
+    db.save_product(dict(p, image_zoom=150, image_x=20, image_y=75), p["version"])
+    saved = db.get_product(p["sku"])
+    assert (saved["image_zoom"], saved["image_x"], saved["image_y"]) == (150, 20, 75)
+    assert db.list_products()[0]["image_zoom"] == 150
+    assert saved["stock"] == p["stock"]
+    restored = Inventory(f"sqlite:///{(tmp_path / 'framing_restore.db').as_posix()}")
+    restored.restore_into_empty(db.backup())
+    assert restored.get_product(p["sku"])["image_zoom"] == 150
+    with pytest.raises(InventoryError):
+        db.save_product(dict(saved, image_zoom=300), saved["version"])
+    assert db.get_product(p["sku"])["image_zoom"] == 150

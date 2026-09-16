@@ -190,3 +190,16 @@ def test_visual_inventory_shortcuts_and_real_photo_cart(ui):
     app.button(key="add_A06-01").click().run()
     navigate(app, "Nueva venta")
     assert any(e.label == "Foto real · 2 fotos" for e in app.expander)
+
+
+def test_edit_image_zoom_and_reopen(ui):
+    app, db = ui
+    login(app)
+    navigate(app, "Inventario")
+    app.button(key="edit_A06-01").click().run()
+    field(app.slider, "Zoom de la imagen (%)").set_value(150).run()
+    field(app.slider, "Centro horizontal (%)").set_value(25).run()
+    no_errors(button(app, "Guardar cambios").click().run())
+    assert db.get_product("A06-01")["image_zoom"] == 150
+    assert field(app.slider, "Zoom de la imagen (%)").value == 150
+    assert field(app.slider, "Centro horizontal (%)").value == 25

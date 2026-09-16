@@ -164,14 +164,16 @@ class Inventory:
         if not include_archived:
             query = query.where(products.c.active.is_(True))
         with self.engine.connect() as conn:
-            return [dict(r) for r in conn.execute(query).mappings()]
+            views = dict(conn.execute(select(settings.c.key, settings.c.value).where(settings.c.key.like("image_view:%"))).all())
+            return [dict(r, **json.loads(views.get(f"image_view:{r['sku']}", '{}'))) for r in conn.execute(query).mappings()]
 
     def get_product(self, sku):
         with self.engine.connect() as conn:
             row = conn.execute(select(products).where(products.c.sku == sku)).mappings().first()
             if not row:
                 raise InventoryError("El artículo ya no existe.")
-            return dict(row)
+            view = conn.execute(select(settings.c.value).where(settings.c.key == f"image_view:{sku}")).scalar_one_or_none()
+            return dict(row, **json.loads(view or '{}'))
 
     def list_photos(self, sku):
         with self.engine.connect() as conn:
@@ -192,6 +194,11 @@ class Inventory:
             low_stock=integer(item.get("low_stock", 5), "Alerta de existencias"), active=bool(item.get("active", True)))
         if image is not None:
             values["image_data"] = clean_image(image)
+        image_view = {key: integer(item.get(key, default), label, minimum=minimum, maximum=maximum)
+                      for key, default, label, minimum, maximum in (
+                          ("image_zoom", 115, "Zoom", 100, 200),
+                          ("image_x", 50, "Centro horizontal", 0, 100),
+                          ("image_y", 50, "Centro vertical", 0, 100))} if "image_zoom" in item else None
         if real_photos is not None:
             if len(real_photos) > 8:
                 raise InventoryError("Puedes guardar hasta 8 fotos reales por artículo.")
@@ -207,6 +214,10 @@ class Inventory:
                         products.c.version == expected_version).values(**values, version=products.c.version + 1))
                     if changed.rowcount != 1:
                         raise InventoryError("Este artículo cambió. Actualiza la página y vuelve a guardar.")
+                if image_view is not None:
+                    key = f"image_view:{values['sku']}"
+                    conn.execute(delete(settings).where(settings.c.key == key))
+                    conn.execute(insert(settings).values(key=key, value=json.dumps(image_view)))
                 if real_photos is not None:
                     conn.execute(delete(product_photos).where(product_photos.c.sku == values["sku"]))
                     for position, raw in enumerate(real_photos):
