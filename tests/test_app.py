@@ -222,6 +222,7 @@ def test_public_request_shortage_admin_review_and_sale(ui):
     login(app)
     db.adjust_stock("A06-01", -5, "Cambio de stock", "ui-shortage")
     navigate(app, "Solicitudes")
+    no_errors(button(app, "Abrir solicitud").click().run())
     assert button(app, "Confirmar venta del pedido").disabled
     no_errors(button(app, "Usar disponibles (5)").click().run())
     no_errors(button(app, "Guardar ajustes del pedido").click().run())
@@ -256,6 +257,7 @@ def test_private_request_alternative_and_cancel(ui):
     row = db.create_inquiry({"A06-01": dict(quantity=1, price_cents=300)}, "Cliente", "+50370000000", "alt", "browser")
     login(app)
     navigate(app, "Solicitudes")
+    no_errors(app.button(key=f"open_inquiry_{row['id']}").click().run())
     no_errors(button(app, "Guardar ajustes y agregar alternativa").click().run())
     import json
     assert len(json.loads(db.list_inquiries()[0]["items"])) == 2

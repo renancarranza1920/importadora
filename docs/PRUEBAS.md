@@ -2,6 +2,14 @@
 
 Fecha de última verificación: 16 de septiembre de 2026.
 
+## Bandeja de solicitudes
+
+- **65 pruebas aprobadas**. Cuatro regresiones nuevas cubren los filtros por estado, apertura explícita del detalle, navegación anterior/siguiente, búsqueda sin tildes, paginación y conservación del contexto al regresar.
+- Las solicitudes nuevas se muestran directamente en una bandeja, sin combo de selección. Tabla en escritorio y tarjetas en pantallas estrechas, con etiquetas de estado y contadores.
+- Chrome a 1440, 768, 390 y 320 píxeles: sin desbordamientos; apertura desde cada fila/tarjeta; anterior/siguiente; segunda página; cambio de estados y regreso con búsqueda y página conservadas.
+- Se mantienen verificadas las contingencias de stock, ajustes, alternativas, cancelación y conversión a venta con ticket. Cambiar el estado conserva el detalle abierto; al volver, la solicitud aparece en su estado correspondiente.
+- Pruebas con solicitudes ficticias en SQLite temporal. No se escribieron datos en la tienda publicada.
+
 ## Auditoría general de calidad
 
 - **61 pruebas automatizadas aprobadas**, incluidas doce regresiones nuevas en `tests/test_quality.py` y una de tildes/eñe en `tests/test_ticket.py`.

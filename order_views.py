@@ -1,9 +1,13 @@
 """Public request cart and private review; requests never reserve stock."""
 import json
 import hashlib
+import unicodedata
+from datetime import datetime
+from html import escape
 from pathlib import Path
 from urllib.parse import urlencode, parse_qs, urlparse
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 
@@ -13,6 +17,9 @@ WHATSAPP = "50373113611"
 API_VERSION = 2
 IMPLEMENTATION_REVISION = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 STATUSES = {"pending": "Pendiente", "contacted": "Contactado", "cancelled": "Cancelado", "converted": "Venta registrada"}
+INQUIRY_FILTERS = {"pending": "Nuevas", "contacted": "Contactadas", "converted": "Con venta",
+                   "cancelled": "Canceladas", "all": "Todas"}
+INQUIRY_PAGE_SIZE = 12
 
 
 def money(value):
@@ -125,23 +132,128 @@ def public_order(db, summary, reel=None, nav_key="nav"):
             st.rerun()
 
 
+def remember_inquiry_filters():
+    # Keep the list's filters after its widgets disappear while reading a detail.
+    st.session_state["inquiry_status"] = st.session_state["_inquiry_status"]
+    st.session_state["inquiry_search"] = st.session_state.get("_inquiry_search", "") or ""
+    st.session_state["inquiry_page"] = 1
+
+
+def clear_inquiry_search():
+    st.session_state.update(inquiry_search="", _inquiry_search="", inquiry_page=1)
+
+
+def open_inquiry(inquiry_id, queue=None):
+    st.session_state["inquiry_selected"] = inquiry_id
+    if queue is not None:
+        st.session_state["inquiry_queue"] = queue
+
+
+def inquiry_status_markup(status):
+    return f'<span class="inquiry-status inquiry-status-{escape(status)}">{escape(STATUSES[status])}</span>'
+
+
+def inquiry_date(row):
+    return datetime.fromisoformat(row["created_at"]).astimezone(ZoneInfo("America/El_Salvador"))
+
+
+def inquiry_search_text(value):
+    return "".join(c for c in unicodedata.normalize("NFKD", value.casefold()) if not unicodedata.combining(c))
+
+
+def inquiry_inbox(rows):
+    st.caption("Las más recientes aparecen primero. Abre un pedido para revisar productos, disponibilidad y pago.")
+    st.button("Actualizar solicitudes", key="refresh_inquiries")
+    counts = {status: sum(row["status"] == status for row in rows) for status in STATUSES}
+    counts["all"] = len(rows)
+    st.session_state.setdefault("_inquiry_status", st.session_state.get("inquiry_status", "pending"))
+    status = st.radio("Estado de las solicitudes", list(INQUIRY_FILTERS), index=None, horizontal=True,
+                      key="_inquiry_status", on_change=remember_inquiry_filters,
+                      format_func=lambda value: f"{INQUIRY_FILTERS[value]} ({counts[value]})")
+    st.session_state.setdefault("_inquiry_search", st.session_state.get("inquiry_search", ""))
+    search = st.text_input("Buscar solicitud o cliente", value=None, key="_inquiry_search",
+                           placeholder="Nombre, número de solicitud o contacto", on_change=remember_inquiry_filters)
+    terms = inquiry_search_text(search or "").split()
+    filtered = [row for row in rows if (status == "all" or row["status"] == status)
+                and all(term in inquiry_search_text(f"{row['id']} {row['customer']} {row['phone']}") for term in terms)]
+    if search:
+        st.button("Limpiar búsqueda", on_click=clear_inquiry_search)
+    if not filtered:
+        st.info("No hay solicitudes para esta búsqueda." if search else "No hay solicitudes en este estado.")
+        return
+
+    pages = (len(filtered) + INQUIRY_PAGE_SIZE - 1) // INQUIRY_PAGE_SIZE
+    page = max(1, min(st.session_state.get("inquiry_page", 1), pages))
+    st.session_state["inquiry_page"] = page
+    start = (page - 1) * INQUIRY_PAGE_SIZE
+    visible = filtered[start:start + INQUIRY_PAGE_SIZE]
+    queue = [row["id"] for row in filtered]
+    st.caption(f"{start + 1}–{start + len(visible)} de {len(filtered)} solicitudes · Fechas en hora de El Salvador")
+    with st.container(key="inquiries_list"):
+        with st.container(key="inquiry_table_header"):
+            left, right = st.columns([5, 1], gap="small")
+            left.html('<div class="inquiry-fields inquiry-headings"><span>Cliente / solicitud</span>'
+                      '<span>Recibida</span><span>Artículos</span><span>Total estimado</span><span>Estado</span></div>')
+            right.html('<div class="inquiry-headings">Detalle</div>')
+        for row in visible:
+            items = json.loads(row["items"])
+            units = sum(item["quantity"] for item in items.values())
+            received = inquiry_date(row)
+            with st.container(border=True, key=f"inquiry_row_{row['id']}"):
+                left, right = st.columns([5, 1], gap="small", vertical_alignment="center")
+                left.html('<div class="inquiry-fields">'
+                    f'<div class="inquiry-customer"><strong>{escape(row["customer"])}</strong>'
+                    f'<span class="inquiry-reference">#{escape(row["id"][:8].upper())}</span></div>'
+                    f'<div class="inquiry-field" data-label="Recibida"><span>{received:%d/%m/%Y}</span>'
+                    f'<small>{received:%H:%M}</small></div>'
+                    f'<div class="inquiry-field" data-label="Artículos"><span>{units} {"unidad" if units == 1 else "unidades"}</span>'
+                    f'<small>{len(items)} {"referencia" if len(items) == 1 else "referencias"}</small></div>'
+                    f'<div class="inquiry-field inquiry-amount" data-label="Total estimado">{money(total(items))}</div>'
+                    f'<div class="inquiry-field" data-label="Estado">{inquiry_status_markup(row["status"])}</div></div>')
+                right.button("Abrir solicitud", key=f"open_inquiry_{row['id']}", width="stretch",
+                             on_click=open_inquiry, args=(row["id"], queue))
+    if pages > 1:
+        previous, next_page = st.columns(2)
+        previous.button("Página anterior", key="inquiry_previous_page", disabled=page == 1, width="stretch",
+                        on_click=set_value, args=("inquiry_page", page - 1))
+        next_page.button("Página siguiente", key="inquiry_next_page", disabled=page == pages, width="stretch",
+                         on_click=set_value, args=("inquiry_page", page + 1))
+        st.caption(f"Página {page} de {pages}")
+
+
 def inquiries_page(db, summary, sale_view, reel=None):
     st.title("Solicitudes")
-    st.caption("Pedidos pendientes de confirmación. El mensaje de WhatsApp puede no haberse enviado.")
-    st.button("Actualizar disponibilidad")
-    rows = db.list_inquiries()
-    status = st.selectbox("Estado de solicitud", ["Abiertas", "Todas"] + list(STATUSES.values()))
-    search = st.text_input("Buscar solicitud o cliente").casefold().strip()
-    rows = [r for r in rows if (status == "Todas" or status == "Abiertas" and r["status"] in ("pending", "contacted") or STATUSES[r["status"]] == status)
-            and search in f"{r['id']} {r['customer']} {r['phone']}".casefold()]
-    if not rows:
-        st.info("No hay solicitudes para estos filtros.")
+    rows = sorted(db.list_inquiries(), key=lambda row: (row["created_at"], row["id"]), reverse=True)
+    selected = st.session_state.get("inquiry_selected")
+    row = next((row for row in rows if row["id"] == selected), None)
+    if row is None:
+        if selected:
+            st.session_state.pop("inquiry_selected", None)
+            st.info("Esta solicitud ya no está disponible. Puedes abrir otra desde la bandeja.")
+        inquiry_inbox(rows)
         return
-    selected = st.selectbox("Selecciona una solicitud", [r["id"] for r in rows],
-        format_func=lambda value: next(f"{r['id'][:8].upper()} · {r['customer']} · {STATUSES[r['status']]}" for r in rows if r["id"] == value))
-    row = next(r for r in rows if r["id"] == selected)
+
+    available_ids = {item["id"] for item in rows}
+    queue = [value for value in st.session_state.get("inquiry_queue", []) if value in available_ids]
+    if selected not in queue:
+        queue = [selected]
+    position = queue.index(selected)
+    back, previous, next_request = st.columns([2, 1, 1])
+    back.button("Volver a solicitudes", on_click=open_inquiry, args=(None,), width="stretch")
+    previous.button("Anterior", key="inquiry_previous", disabled=position == 0, width="stretch",
+                    on_click=open_inquiry, args=(queue[max(0, position - 1)],))
+    next_request.button("Siguiente", key="inquiry_next", disabled=position == len(queue) - 1, width="stretch",
+                        on_click=open_inquiry, args=(queue[min(len(queue) - 1, position + 1)],))
+    st.caption(f"Solicitud {position + 1} de {len(queue)} de la bandeja que abriste")
+    st.html(inquiry_status_markup(row["status"]))
+    st.button("Actualizar disponibilidad", key="refresh_inquiry_detail")
+    inquiry_detail(db, row, summary, sale_view, reel)
+
+
+def inquiry_detail(db, row, summary, sale_view, reel=None):
+    selected = row["id"]
     st.text(row["customer"] + (f" · {row['phone']}" if row["phone"] else ""))
-    st.caption(f"Solicitud {selected[:8].upper()} · {STATUSES[row['status']]}")
+    st.caption(f"Solicitud {selected[:8].upper()} · {inquiry_date(row):%d/%m/%Y %H:%M} (El Salvador)")
     original, cart = json.loads(row["original_items"]), json.loads(row["items"])
     with st.expander("Pedido original del cliente"):
         st.dataframe([dict(Referencia=sku, Producto=i["name"], Cantidad=i["quantity"], Precio=money(i["price_cents"])) for sku, i in original.items()], hide_index=True, width="stretch")
@@ -195,6 +307,7 @@ def inquiries_page(db, summary, sale_view, reel=None):
                 st.session_state["last_sale"] = sale_id
                 st.session_state["download_sale"] = sale_id
                 st.session_state["flash"] = "Venta confirmada. Existencias actualizadas y ticket disponible."
+                st.session_state.pop("inquiry_selected", None)
                 st.session_state["next_nav"] = "Nueva venta"
                 st.rerun()
     with st.expander("Cancelar solicitud"):
