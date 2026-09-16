@@ -46,12 +46,26 @@ PUBLIC = is_true(config("PUBLIC_CATALOG", True))
 ENCODED = auth.configured_hash(config, PRODUCTION)
 
 
-@st.cache_resource
+@st.cache_resource(validate=lambda value: all(callable(getattr(value, method, None)) for method in
+                                             ("create_inquiry", "list_inquiries", "update_inquiry", "list_photos")))
 def database(url, production, implementation_revision):
     # Streamlit does not invalidate this resource when only inventory.py changes.
     # Include that file's revision in the cache key so new methods/tables are loaded.
-    db = Inventory(url, production)
-    db.seed()
+    import importlib
+    from hashlib import sha256
+    from pathlib import Path
+    import inventory as inventory_module
+    required = ("create_inquiry", "list_inquiries", "update_inquiry", "list_photos")
+    revision = sha256(Path(inventory_module.__file__).read_bytes()).hexdigest()
+    if getattr(inventory_module, "IMPLEMENTATION_REVISION", None) != revision or not all(callable(getattr(inventory_module.Inventory, name, None)) for name in required):
+        inventory_module = importlib.reload(inventory_module)
+    if not all(callable(getattr(inventory_module.Inventory, name, None)) for name in required):
+        raise InventoryError("Actualización incompleta: sube inventory.py junto con app.py y order_views.py y reinicia Streamlit.")
+    try:
+        db = inventory_module.Inventory(url, production)
+        db.seed()
+    except inventory_module.InventoryError as error:
+        raise InventoryError(str(error)) from error
     return db
 
 
@@ -170,9 +184,13 @@ def login_page():
 
 
 @st.fragment(run_every="30s")
-def catalogue(seller):
+def catalogue(seller, storefront=False):
     all_items = db.list_products()
-    st.html('<div class="hero"><div class="eyebrow">COLECCIÓN MAYORISTA · USD</div>'
+    if storefront:
+        st.html('<div class="shop-hero"><div class="eyebrow">ELIGE TU PRÓXIMO PROTECTOR</div>'
+                '<h1>Tu estilo, tu protector.</h1><p>Explora las fotos, elige tus favoritos y prepara tu pedido por WhatsApp.</p></div>')
+    else:
+        st.html('<div class="hero"><div class="eyebrow">COLECCIÓN MAYORISTA · USD</div>'
             '<h1>El próximo favorito<br>de tus clientes.</h1>'
             '<p>Explora los modelos, encuentra el protector ideal y consulta las unidades disponibles.</p>'
             '<span class="hero-badge">● &nbsp; Existencias actualizadas cada 30 segundos</span></div>')
@@ -581,7 +599,12 @@ try:
     if PRODUCTION and not ENCODED.startswith("pbkdf2_sha256$"):
         raise InventoryError("Configura ADMIN_PASSWORD_HASH en Secrets. Consulta docs/PUBLICAR_EN_INTERNET.md.")
     db = database(url, PRODUCTION, hashlib.sha256((ROOT / "inventory.py").read_bytes()).hexdigest())
-except (InventoryError, SQLAlchemyError, ValueError):
+    from inventory import InventoryError  # Keep error handling aligned after a module refresh.
+except InventoryError as error:
+    st.error(str(error))
+    st.info("Revisa que app.py, inventory.py y order_views.py estén actualizados juntos y reinicia la app desde Streamlit.")
+    st.stop()
+except (SQLAlchemyError, ValueError):
     st.error("No se pudo iniciar la base de datos o falta configurar el acceso.")
     st.info("En tu computadora abre INICIAR_APP.bat. Para publicar, completa DATABASE_URL, APP_ENV y ADMIN_PASSWORD_HASH en Secrets según la guía.")
     st.stop()
@@ -595,8 +618,32 @@ st.session_state.setdefault("adjust_request", str(uuid4()))
 st.session_state.setdefault("public_cart", {})
 st.session_state.setdefault("public_request", str(uuid4()))
 st.session_state.setdefault("public_source", str(uuid4()))
+storefront = PUBLIC and (st.query_params.get("vista") == "pedidos" or not seller and st.query_params.get("vista") != "admin")
+if storefront:
+    st.html('<style>[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"]{display:none!important;}</style>')
+    st.html(f'<div class="shop-brand">{escape(BUSINESS)}<span>CATÁLOGO</span></div>')
+    count = sum(i["quantity"] for i in st.session_state["public_cart"].values())
+    current = st.radio("Explorar", ["Catálogo", "Mi pedido"], key="public_nav", horizontal=True,
+                       format_func=lambda value: f"Mi pedido ({count})" if value == "Mi pedido" else value)
+    try:
+        if current == "Mi pedido":
+            public_order(db, product_summary, photo_reel, nav_key="public_nav")
+        else:
+            if count:
+                st.button(f"Revisar mi pedido · {count} unidades", type="primary", width="stretch",
+                          on_click=lambda: st.session_state.update(public_nav="Mi pedido"))
+            catalogue(False, storefront=True)
+    except InventoryError as error:
+        st.error(str(error))
+        st.button("Actualizar pedido")
+    except SQLAlchemyError:
+        st.error("No se pudo guardar el pedido. Tus productos siguen en el carrito; vuelve a intentarlo.")
+        st.button("Reintentar")
+    st.stop()
 if "next_nav" in st.session_state:
     st.session_state["nav"] = st.session_state.pop("next_nav")
+if "nav" not in st.session_state and not seller and st.query_params.get("vista") == "admin":
+    st.session_state["nav"] = "Acceso administrador"
 if "nav" not in st.session_state and PUBLIC and st.query_params.get("vista") == "pedidos":
     st.session_state["nav"] = "Catálogo"
 

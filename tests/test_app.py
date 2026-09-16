@@ -26,7 +26,10 @@ def ui(tmp_path, monkeypatch):
     monkeypatch.setenv("APP_ENV", "local")
     monkeypatch.setenv("DATABASE_URL", url)
     monkeypatch.setenv("ADMIN_PASSWORD_HASH", password_hash(PASSWORD))
-    app = no_errors(AppTest.from_file(str(ROOT / "app.py"), default_timeout=20).run())
+    app = AppTest.from_file(str(ROOT / "app.py"), default_timeout=20)
+    app.query_params["vista"] = "admin"
+    no_errors(app.run())
+    app.radio(key="nav").set_value("Catálogo").run()  # Exercise the internal catalog preview too.
     return app, Inventory(url)
 
 
@@ -211,10 +214,8 @@ def test_public_request_shortage_admin_review_and_sale(ui):
     app.button(key="request_add_A06-01").click().run()
     navigate(app, "Mi pedido")
     field(app.number_input, "Cantidad · A06-01").set_value(8).run()
-    field(app.text_input, "Tu nombre").set_value("Ana UI")
-    field(app.text_input, "Tu WhatsApp con código de país").set_value("+503 7000 0000")
-    field(app.checkbox, "Quiero registrar esta solicitud para que revisen disponibilidad y precio.").check()
-    no_errors(button(app, "Registrar solicitud").click().run())
+    field(app.text_input, "Tu nombre (opcional)").set_value("Ana UI")
+    no_errors(button(app, "Pedir por WhatsApp").click().run())
     assert db.get_product("A06-01")["stock"] == 10
     assert len(db.list_inquiries()) == 1
     assert "50373113611" in app.get("link_button")[0].proto.url
@@ -239,12 +240,12 @@ def test_public_cart_sold_out_and_changed_price(ui):
     p = db.get_product("A06-01")
     db.save_product(dict(p, price_cents=400), p["version"])
     navigate(app, "Mi pedido")
-    assert button(app, "Registrar solicitud").disabled
+    assert button(app, "Pedir por WhatsApp").disabled
     field(app.checkbox, "Aceptar precio actual").check().run()
-    assert not button(app, "Registrar solicitud").disabled
+    assert not button(app, "Pedir por WhatsApp").disabled
     db.adjust_stock("A06-01", -10, "Agotado", "empty-public")
     no_errors(app.run())
-    assert button(app, "Registrar solicitud").disabled
+    assert button(app, "Pedir por WhatsApp").disabled
     no_errors(button(app, "Usar disponibles (0)").click().run())
     assert not db.list_inquiries()
     assert not db.list_sales()
@@ -262,3 +263,21 @@ def test_private_request_alternative_and_cancel(ui):
     no_errors(button(app, "Cancelar pedido").click().run())
     assert db.list_inquiries()[0]["status"] == "cancelled"
     assert db.get_product("A06-01")["stock"] == 10
+
+
+def test_separate_storefront_needs_no_phone_or_login(ui):
+    app, db = ui
+    app.query_params["vista"] = "pedidos"
+    no_errors(app.run())
+    assert not app.sidebar.radio
+    assert app.radio(key="public_nav").options == ["Catálogo", "Mi pedido (0)"]
+    assert not any(e.label == "Acceso administrador" for e in app.button)
+    app.button(key="request_add_A06-01").click().run()
+    app.radio(key="public_nav").set_value("Mi pedido").run()
+    assert not any("teléfono" in e.label.lower() or "código de país" in e.label for e in app.text_input)
+    assert not app.checkbox
+    no_errors(button(app, "Pedir por WhatsApp").click().run())
+    row = db.list_inquiries()[0]
+    assert row["phone"] == "" and row["customer"] == "Cliente de WhatsApp"
+    assert db.get_product("A06-01")["stock"] == 10
+    assert app.get("link_button")[0].proto.url.startswith("https://wa.me/50373113611?")

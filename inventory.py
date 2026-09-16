@@ -19,6 +19,7 @@ from sqlalchemy import (Boolean, CheckConstraint, Column, Integer, LargeBinary,
 from sqlalchemy.exc import IntegrityError
 
 ROOT = Path(__file__).resolve().parent
+IMPLEMENTATION_REVISION = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 metadata = MetaData()
 products = Table("products", metadata,
     Column("sku", String(60), primary_key=True), Column("name", String(200), nullable=False),
@@ -350,8 +351,10 @@ class Inventory:
 
     def create_inquiry(self, cart, customer, phone, request_key, source):
         customer, phone = customer.strip(), phone.strip()
-        if not customer or len(customer) > 200 or len(phone) > 30 or not 8 <= sum(c.isdigit() for c in phone) <= 15 or not all(c.isdigit() or c in "+ -()" for c in phone):
-            raise InventoryError("Escribe tu nombre y un número de contacto válido.")
+        if not customer or len(customer) > 200:
+            raise InventoryError("Escribe tu nombre (máximo 200 caracteres).")
+        if phone and (len(phone) > 30 or not 8 <= sum(c.isdigit() for c in phone) <= 15 or not all(c.isdigit() or c in "+ -()" for c in phone)):
+            raise InventoryError("El número de contacto no es válido.")
         if not request_key or len(request_key) > 80 or not source or len(source) > 80:
             raise InventoryError("Vuelve a abrir el pedido e inténtalo de nuevo.")
         if not cart or len(cart) > 20:

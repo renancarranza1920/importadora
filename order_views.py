@@ -1,9 +1,10 @@
 """Public request cart and private review; requests never reserve stock."""
 import json
-from urllib.parse import urlencode
+from urllib.parse import urlencode, parse_qs, urlparse
 from uuid import uuid4
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 WHATSAPP = "50373113611"
 STATUSES = {"pending": "Pendiente", "contacted": "Contactado", "cancelled": "Cancelado", "converted": "Venta registrada"}
@@ -19,7 +20,7 @@ def total(cart):
 
 def whatsapp_link(row, cart=None, recipient=WHATSAPP):
     cart = cart if cart is not None else json.loads(row["items"])
-    lines = [f"Solicitud {row['id'][:8].upper()}", f"Cliente: {row['customer']}", f"Contacto: {row['phone']}"]
+    lines = [f"Solicitud {row['id'][:8].upper()}", f"Cliente: {row['customer']}"]
     for sku, item in cart.items():
         lines.append(f"{sku} · {item.get('name', sku)[:60]} · {item['quantity']} x {money(item['price_cents'])} = {money(item['quantity'] * item['price_cents'])}")
     lines.extend([f"Total estimado: {money(total(cart))} USD", "Sujeto a confirmación de disponibilidad y precio."])
@@ -67,7 +68,7 @@ def review_items(db, cart, prefix, summary, reel=None):
     return revised, invalid or not revised
 
 
-def public_order(db, summary, reel=None):
+def public_order(db, summary, reel=None, nav_key="nav"):
     st.title("Mi pedido")
     st.caption("Revisa tus productos. El pedido no reserva unidades ni confirma una compra.")
     last = st.session_state.get("last_inquiry")
@@ -78,26 +79,31 @@ def public_order(db, summary, reel=None):
                 st.write(f"{sku} · {item['name']} · {item['quantity']} × {money(item['price_cents'])}")
             st.write(f"**Total estimado: {money(total(json.loads(last['items'])))} USD**")
         st.link_button("Continuar en WhatsApp", whatsapp_link(last), type="primary", width="stretch")
+        if st.session_state.pop("open_order_whatsapp", False):
+            target = json.dumps(whatsapp_link(last))
+            components.html(f'''<script>
+            const a = window.parent.document.createElement('a');
+            a.href = {target}; a.target = '_blank'; a.rel = 'noopener noreferrer';
+            window.parent.document.body.appendChild(a); a.click(); a.remove();
+            </script>''', height=0)
+        st.caption("Si WhatsApp no se abrió, toca «Continuar en WhatsApp». Funciona con la app o WhatsApp Web.")
         st.caption("Abre WhatsApp y pulsa Enviar para coordinar la confirmación. Registrar la solicitud no envía el mensaje automáticamente.")
     cart = st.session_state["public_cart"]
     if not cart:
         st.info("Agrega productos desde el catálogo para preparar un pedido.")
-        st.button("Ver catálogo", on_click=set_value, args=("nav", "Catálogo"), width="stretch")
+        st.button("Ver catálogo", on_click=set_value, args=(nav_key, "Catálogo"), width="stretch")
         return
     revised, invalid = review_items(db, cart, "public", summary, reel)
     if revised != cart:
         st.session_state["public_cart"] = revised
         st.session_state["public_request"] = str(uuid4())
     with st.form("public_order"):
-        customer = st.text_input("Tu nombre", max_chars=100)
-        phone = st.text_input("Tu WhatsApp con código de país", placeholder="+503 …", max_chars=30)
-        consent = st.checkbox("Quiero registrar esta solicitud para que revisen disponibilidad y precio.")
-        if st.form_submit_button("Registrar solicitud y preparar WhatsApp", type="primary", disabled=invalid, width="stretch"):
-            if not consent:
-                st.error("Confirma que deseas registrar la solicitud.")
-                return
-            row = db.create_inquiry(revised, customer, phone, st.session_state["public_request"], st.session_state["public_source"])
+        customer = st.text_input("Tu nombre (opcional)", max_chars=100)
+        st.caption("Al continuar se guarda tu solicitud y se abre WhatsApp con el pedido preparado.")
+        if st.form_submit_button("Pedir por WhatsApp", type="primary", disabled=invalid, width="stretch"):
+            row = db.create_inquiry(revised, customer.strip() or "Cliente de WhatsApp", "", st.session_state["public_request"], st.session_state["public_source"])
             st.session_state["last_inquiry"] = row
+            st.session_state["open_order_whatsapp"] = True
             st.session_state["public_cart"] = {}
             st.session_state["public_request"] = str(uuid4())
             for key in list(st.session_state):
@@ -154,7 +160,13 @@ def inquiries_page(db, summary, sale_view, reel=None):
         else:
             st.info("No hay otros productos disponibles.")
     phone = ''.join(c for c in row["phone"] if c.isdigit())
-    st.link_button("Revisar pedido con el cliente por WhatsApp", whatsapp_link(row, revised, phone), width="stretch")
+    if phone:
+        st.link_button("Revisar pedido con el cliente por WhatsApp", whatsapp_link(row, revised, phone), width="stretch")
+    else:
+        st.caption(f"Busca la solicitud {selected[:8].upper()} en el chat recibido por WhatsApp para responder al cliente.")
+        message = parse_qs(urlparse(whatsapp_link(row, revised)).query)["text"][0]
+        with st.expander("Copiar resumen actualizado para el chat"):
+            st.code(message, language=None)
     if st.button("Marcar como contactado", disabled=changed or row["status"] == "contacted", width="stretch"):
         db.update_inquiry(selected, row["version"], cart, "contacted")
         st.rerun()

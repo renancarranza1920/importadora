@@ -88,7 +88,7 @@ La documentación oficial muestra [cómo seleccionar el repositorio y configurar
 
 1. Abre tu dirección `https://...streamlit.app` desde el celular usando datos móviles. Esto comprueba que accedes por internet, sin depender de esta computadora.
 2. Revisa las fotos, busca **A26** y comprueba que aparecen las referencias compatibles A16/A17/A26. Busca **iPhone 14** y comprueba las referencias 13/14.
-3. Entra en **Acceso administrador**. En pantalla pequeña, abre primero el menú lateral con el botón de la esquina superior izquierda.
+3. Para administrar, abre tu dirección con `?vista=admin` al final e inicia sesión. Comparte con los clientes el enlace `?vista=pedidos`, que tiene una vista independiente sin menú administrativo.
 4. Revisa el inventario inicial: **24 referencias, 360 unidades y $902.50 a precio de venta**. Si ya registraste movimientos reales, tus cantidades serán distintas.
 5. Agrega una unidad de **A06-01** a una venta. Escribe `PRUEBA DE PUBLICACIÓN` como cliente, revisa el total de **$3.00** y confirma.
 6. Comprueba que A06-01 bajó de **10 a 9**. En otro dispositivo, espera hasta 30 segundos o vuelve a abrir el catálogo y comprueba el mismo saldo.

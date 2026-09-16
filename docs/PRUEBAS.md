@@ -2,6 +2,13 @@
 
 Fecha de última verificación: 16 de septiembre de 2026.
 
+## Catálogo independiente y pedido sin teléfono
+
+- 46 pruebas automatizadas: el pedido público no solicita teléfono ni exige nombre, conserva el stock y prepara el enlace al número del negocio. Se mantiene la revisión privada y las contingencias.
+- La caché valida que existan los métodos de solicitudes; una conexión obsoleta se reconstruye sin reiniciar existencias. La revisión del módulo cargado también se contrasta con el archivo para detectar actualizaciones en caliente. Un despliegue incompleto muestra qué archivos actualizar en lugar de fallar al pulsar el botón.
+- Chrome móvil: vista pública sin navegación administrativa, registro sin teléfono, apertura automática del destino WhatsApp interceptada para no navegar al servicio real, y comprobación de la solicitud desde `?vista=admin`.
+- Si el navegador bloquea pestañas nuevas, el enlace «Continuar en WhatsApp» permanece disponible. El usuario todavía debe enviar el mensaje en WhatsApp.
+
 ## Pedidos públicos y solicitudes privadas
 
 - 45 pruebas aprobadas en SQLite temporal: registro sin modificar stock, reintentos sin duplicar solicitudes, enlace WhatsApp al destino correcto, agotados, cambios de precio, ajustes, alternativas, cancelación y conversión a venta con ticket.

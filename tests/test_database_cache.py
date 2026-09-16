@@ -26,5 +26,10 @@ def test_inventory_update_recreates_cached_resource_without_resetting_stock(tmp_
         assert current.list_photos("A06-01") == []
         assert current.get_product("A06-01")["stock"] == 13
         assert database(url, False, "with-real-photos") is current
+        current.create_inquiry = None  # Simulate a stale cached resource lacking the new API.
+        repaired = database(url, False, "with-real-photos")
+        assert repaired is not current
+        assert callable(repaired.create_inquiry)
+        assert repaired.get_product("A06-01")["stock"] == 13
     finally:
         database.clear()

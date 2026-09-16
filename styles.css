@@ -8,6 +8,13 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 .brand {display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.10em;font-size:16px;margin:5px 0 5px;}
 .brand-icon {display:grid;place-items:center;width:43px;height:43px;flex-shrink:0;border-radius:13px;background:#137b60;color:white;font-size:23px;}
 .brand {overflow-wrap:anywhere;}
+.shop-brand {display:flex;justify-content:space-between;align-items:center;gap:16px;font-weight:800;font-size:22px;letter-spacing:.06em;padding:12px 0 24px;border-bottom:1px solid #ccdcd3;}
+.shop-brand span {font-size:11px;letter-spacing:.16em;color:#137b60;}
+.shop-hero {padding:32px 0 24px;max-width:650px;}
+.shop-hero h1 {font-size:clamp(30px,5vw,48px);line-height:1.12;}
+.shop-hero p {font-size:16px;color:#526d60;}
+.st-key-public_nav {position:sticky;top:3.5rem;z-index:5;background:#f6f8f7;padding:12px 0;border-bottom:1px solid #dde7e1;}
+.st-key-public_nav [role="radiogroup"] {gap:20px;}
 .brand-sub {font-size:11px;color:#798982;letter-spacing:.08em;margin-left:55px;margin-bottom:35px;}
 .eyebrow {font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#789185;margin-bottom:8px;}
 .hero {position:relative;background:#123e32;border-radius:24px;padding:36px 40px;margin:10px 0 26px;overflow:hidden;color:#fff;}
