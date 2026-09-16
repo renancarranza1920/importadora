@@ -1,5 +1,7 @@
 """Public request cart and private review; requests never reserve stock."""
 import json
+import hashlib
+from pathlib import Path
 from urllib.parse import urlencode, parse_qs, urlparse
 from uuid import uuid4
 
@@ -7,6 +9,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 WHATSAPP = "50373113611"
+API_VERSION = 2
+IMPLEMENTATION_REVISION = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 STATUSES = {"pending": "Pendiente", "contacted": "Contactado", "cancelled": "Cancelado", "converted": "Venta registrada"}
 
 

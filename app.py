@@ -18,7 +18,6 @@ import streamlit.components.v1 as components
 from sqlalchemy.exc import SQLAlchemyError
 
 import auth
-from order_views import public_order, inquiries_page
 from ticket import ticket_png
 from inventory import Inventory, InventoryError, ROOT, cents, clean_image
 
@@ -44,6 +43,21 @@ TZ = ZoneInfo(str(config("TIMEZONE", "America/El_Salvador")))
 PRODUCTION = str(config("APP_ENV", "production")) == "production"
 PUBLIC = is_true(config("PUBLIC_CATALOG", True))
 ENCODED = auth.configured_hash(config, PRODUCTION)
+
+
+def load_order_views():
+    """Refresh changed view code before binding its functions on a Streamlit rerun."""
+    import importlib
+    import inspect
+    import order_views
+    revision = hashlib.sha256(Path(order_views.__file__).read_bytes()).hexdigest()
+    if getattr(order_views, "IMPLEMENTATION_REVISION", None) != revision:
+        order_views = importlib.reload(order_views)
+    if (getattr(order_views, "API_VERSION", None) != 2
+            or not callable(getattr(order_views, "public_order", None))
+            or "nav_key" not in inspect.signature(order_views.public_order).parameters):
+        raise InventoryError("Actualización incompleta: reemplaza order_views.py junto con app.py, inventory.py y styles.css y reinicia Streamlit.")
+    return order_views
 
 
 @st.cache_resource(validate=lambda value: all(callable(getattr(value, method, None)) for method in
@@ -598,6 +612,7 @@ if not url and not PRODUCTION:
 try:
     if PRODUCTION and not ENCODED.startswith("pbkdf2_sha256$"):
         raise InventoryError("Configura ADMIN_PASSWORD_HASH en Secrets. Consulta docs/PUBLICAR_EN_INTERNET.md.")
+    order_pages = load_order_views()
     db = database(url, PRODUCTION, hashlib.sha256((ROOT / "inventory.py").read_bytes()).hexdigest())
     from inventory import InventoryError  # Keep error handling aligned after a module refresh.
 except InventoryError as error:
@@ -623,11 +638,11 @@ if storefront:
     st.html('<style>[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"]{display:none!important;}</style>')
     st.html(f'<div class="shop-brand">{escape(BUSINESS)}<span>CATÁLOGO</span></div>')
     count = sum(i["quantity"] for i in st.session_state["public_cart"].values())
-    current = st.radio("Explorar", ["Catálogo", "Mi pedido"], key="public_nav", horizontal=True,
+    current = st.radio("Explorar", ["Catálogo", "Mi pedido"], key="public_nav", horizontal=True, width="stretch",
                        format_func=lambda value: f"Mi pedido ({count})" if value == "Mi pedido" else value)
     try:
         if current == "Mi pedido":
-            public_order(db, product_summary, photo_reel, nav_key="public_nav")
+            order_pages.public_order(db, product_summary, photo_reel, nav_key="public_nav")
         else:
             if count:
                 st.button(f"Revisar mi pedido · {count} unidades", type="primary", width="stretch",
@@ -681,9 +696,9 @@ try:
     elif current == "Catálogo" and (PUBLIC or seller):
         catalogue(seller)
     elif current == "Mi pedido" and PUBLIC and not seller:
-        public_order(db, product_summary, photo_reel)
+        order_pages.public_order(db, product_summary, photo_reel)
     elif current == "Solicitudes" and seller:
-        inquiries_page(db, product_summary, sale_view, photo_reel)
+        order_pages.inquiries_page(db, product_summary, sale_view, photo_reel)
     elif seller:
         {"Nueva venta": cart_page, "Inventario": inventory_page, "Ventas": sales_page,
          "Movimientos": movements_page, "Ayuda y respaldo": help_page}[current]()

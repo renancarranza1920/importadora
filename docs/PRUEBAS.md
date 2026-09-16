@@ -2,6 +2,13 @@
 
 Fecha de última verificación: 16 de septiembre de 2026.
 
+## Barra pública y actualización de vistas
+
+- 48 pruebas aprobadas. Regresiones nuevas: recarga de una función antigua sin `nav_key` y mensaje explícito ante una versión de vistas incompatible.
+- La navegación pública usa ancho completo y se desplaza con el contenido, sin quedarse encima de las tarjetas.
+- Chrome a 1440 y 390 píxeles: comprobación de posición al hacer scroll y apertura de «Mi pedido» sin excepciones.
+- Para actualizar, reemplazar juntos `app.py`, `order_views.py`, `inventory.py` y `styles.css`, y reiniciar Streamlit. El ZIP de publicación contiene el conjunto completo y excluye secretos y bases locales.
+
 ## Catálogo independiente y pedido sin teléfono
 
 - 46 pruebas automatizadas: el pedido público no solicita teléfono ni exige nombre, conserva el stock y prepara el enlace al número del negocio. Se mantiene la revisión privada y las contingencias.
