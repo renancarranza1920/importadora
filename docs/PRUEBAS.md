@@ -2,6 +2,14 @@
 
 Fecha de última verificación: 16 de septiembre de 2026.
 
+## Auditoría general de calidad
+
+- **61 pruebas automatizadas aprobadas**, incluidas doce regresiones nuevas en `tests/test_quality.py` y una de tildes/eñe en `tests/test_ticket.py`.
+- Chrome local a 320, 390, 768 y 1440 píxeles: catálogo/pedido, navegación, avisos, carrito, formularios, zoom suave y movimiento reducido.
+- Alta con fotos inválidas/exceso de archivos, recuperación sin perder campos, pedido sin teléfono con destino WhatsApp interceptado, venta con confirmación y ticket PNG.
+- `pip check` sin incompatibilidades. Pruebas con datos temporales, sin escrituras en producción.
+- Lista completa de cambios, evidencia y límites en [AUDITORIA_CALIDAD.md](AUDITORIA_CALIDAD.md). Las secciones siguientes conservan el historial de verificaciones anteriores.
+
 ## Barra pública y actualización de vistas
 
 - 48 pruebas aprobadas. Regresiones nuevas: recarga de una función antigua sin `nav_key` y mensaje explícito ante una versión de vistas incompatible.

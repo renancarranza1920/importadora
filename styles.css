@@ -25,10 +25,12 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 .hero-badge {display:inline-block;margin-top:22px;font-size:11px;background:#ffffff15;border:1px solid #ffffff28;border-radius:50px;padding:6px 12px;color:#d9eade;position:relative;z-index:1;}
 .section-line {display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px;gap:10px;}
 .section-line h2 {font-size:24px;margin:0;}
-.muted {color:#7a8982;font-size:12px;}
+.muted {color:#52685c;font-size:13px;}
 .product-photo {display:flex;align-items:center;justify-content:center;background:#f3f5f4;border-radius:13px;height:192px;margin:0 0 14px;overflow:hidden;}
-.product-photo img {width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;}
-.product-ref {font-size:10px;font-weight:700;color:#85958c;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;}
+.product-photo img {width:100%;height:100%;object-fit:contain;}
+.photo-placeholder {flex-direction:column;color:#52685c;font-size:13px;gap:8px;}
+.photo-placeholder span:first-child {font-size:42px;}
+.product-ref {font-size:11px;font-weight:700;color:#52685c;letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px;}
 .product-title {font-family:Manrope,sans-serif;font-size:17px;font-weight:800;line-height:1.35;letter-spacing:-.02em;min-height:47px;margin-bottom:10px;}
 .product-foot {display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin:5px 0 10px;}
 .product-title,.product-ref {overflow-wrap:anywhere;}
@@ -39,15 +41,14 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 [data-testid="stExpander"] summary {gap:8px;min-height:44px;}
 [data-testid="stExpander"] summary [data-testid="stMarkdownContainer"] {min-width:0;overflow-wrap:anywhere;}
 .product-price {font-weight:800;font-size:24px;letter-spacing:-.05em;}
-.price-currency {font-size:10px;letter-spacing:0;font-weight:500;color:#7a8982;}
-.stock {font-size:10px;font-weight:700;border-radius:30px;padding:5px 8px;background:#e4f1e9;color:#26714e;white-space:nowrap;}
-.stock.low {color:#a16b17;background:#fff3da;}.stock.empty {color:#8b574e;background:#faeae7;}
+.price-currency {font-size:11px;letter-spacing:0;font-weight:500;color:#52685c;}
+.stock {font-size:11px;font-weight:700;border-radius:30px;padding:6px 10px;background:#e4f1e9;color:#26714e;white-space:nowrap;}
+.stock.low {color:#80500b;background:#fff3da;}.stock.empty {color:#8b574e;background:#faeae7;}
 [class*="st-key-card_"] {background:white;border:1px solid #e3eae6!important;box-shadow:0 3px 8px #143e2603;border-radius:18px!important;padding:15px!important;}
 [data-testid="stMetric"] {background:white;border:1px solid #e3eae6;border-radius:16px;padding:16px 20px;}
 [data-testid="stMetricValue"] {font-family:Manrope,sans-serif;font-weight:800;letter-spacing:-.05em;}
 [data-testid="stMetricLabel"] {color:#788980;font-size:12px;}
-.stButton button {min-height:43px;border-radius:10px;}
-.stDownloadButton button {min-height:43px;}
+.stButton button,.stDownloadButton button,[data-testid="stFormSubmitButton"] button,.stLinkButton a {min-height:44px;border-radius:10px;}
 [data-testid="stForm"],.st-key-image_editor {background:white;border:1.5px solid #9eb5aa!important;border-radius:18px;padding:24px;box-shadow:0 4px 16px #183d2f08;}
 [data-baseweb="input"],[data-baseweb="textarea"],
 [data-testid="stTextInputRootElement"],[data-testid="stTextAreaRootElement"],
@@ -97,6 +98,39 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
  .product-photo img,.photo-reel img {transition:none;}
 }
 .photo-reel figure:focus-visible img {transform:scale(1.08);}
+/* Keep the native icon fonts intact and motion limited to the item in focus. */
+.brand-sub,.eyebrow,[data-testid="stMetricLabel"],.empty-state {color:#52685c;}
+.receipt-total,.cart-unit,.product-price,[data-testid="stMetricValue"] {font-variant-numeric:tabular-nums;}
+.receipt-total {font-size:clamp(30px,4vw,42px);overflow-wrap:anywhere;max-width:100%;}
+[class*="st-key-card_"],[class*="st-key-inventory_card_"],[class*="st-key-cart_item_"] {
+ border-color:#cbdad1!important;transition:border-color .2s ease,box-shadow .2s ease;
+}
+.stButton button,.stDownloadButton button,[data-testid="stFormSubmitButton"] button,.stLinkButton a {
+ transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.st-key-public_nav [role="radiogroup"] {gap:8px;flex-wrap:wrap;}
+.st-key-public_nav [role="radiogroup"] label {min-height:44px;padding:8px 14px;border:1px solid #cbdad1;border-radius:12px;background:white;}
+.st-key-public_nav [role="radiogroup"] label:has(input:checked) {background:#e4f1e9;border-color:#137b60;}
+[data-testid="stRadio"] [role="radiogroup"] label,[data-testid="stCheckbox"] label {min-height:44px;align-items:center;}
+button:focus-visible,a:focus-visible,.photo-reel:focus-visible,.photo-reel figure:focus-visible {
+ outline:3px solid #137b60!important;outline-offset:3px;
+}
+[data-testid="stForm"]:focus-within,.st-key-image_editor:focus-within {border-color:#137b60!important;}
+[data-testid="stAlert"] {border-radius:12px;overflow-wrap:anywhere;}
+[data-testid="stToastContainer"],[data-testid="stToast"] {max-width:calc(100vw - 32px);box-sizing:border-box;}
+[data-testid="stMain"] {scroll-padding-top:5rem;}
+.photo-reel {scrollbar-width:thin;scrollbar-color:#9aafa4 #f3f5f4;overscroll-behavior-x:contain;}
+@media (hover:hover) {
+ [class*="st-key-card_"]:hover,[class*="st-key-inventory_card_"]:hover {
+  border-color:#9aafa4!important;box-shadow:0 6px 20px #183d2f0d;
+ }
+ .stButton button:not(:disabled):hover,.stDownloadButton button:not(:disabled):hover,.stLinkButton a:hover {
+  box-shadow:0 3px 9px #183d2f12;
+ }
+}
+@media (prefers-reduced-motion:reduce) {
+ .stApp *,.stApp *::before,.stApp *::after {animation:none!important;transition:none!important;scroll-behavior:auto!important;}
+}
 @media(max-width:640px) {
  [data-testid="stForm"],.st-key-image_editor {padding:16px;}
  .cart-product {grid-template-columns:100px minmax(0,1fr);gap:14px;}
@@ -112,4 +146,9 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
  .product-title {min-height:0;}
  [data-testid="stMetric"] {padding:12px;}
  .section-line {align-items:flex-start;flex-direction:column;}
+ .shop-brand {font-size:19px;gap:8px;}
+ .st-key-public_nav [role="radiogroup"] label {padding:8px 10px;}
+ .cart-subtotal strong {font-size:18px;overflow-wrap:anywhere;}
+ [data-testid="stTextInput"] input,[data-testid="stTextArea"] textarea,[data-testid="stNumberInput"] input {font-size:16px;}
+ [data-testid="stToast"] {padding:16px;}
 }

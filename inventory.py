@@ -19,6 +19,7 @@ from sqlalchemy import (Boolean, CheckConstraint, Column, Integer, LargeBinary,
 from sqlalchemy.exc import IntegrityError
 
 ROOT = Path(__file__).resolve().parent
+MAX_TOTAL_CENTS = 2_000_000_000
 IMPLEMENTATION_REVISION = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 metadata = MetaData()
 products = Table("products", metadata,
@@ -116,7 +117,13 @@ def clean_image(raw):
         with Image.open(io.BytesIO(raw)) as img:
             if img.width * img.height > 20000000:
                 raise InventoryError("La imagen es demasiado grande; máximo 20 megapíxeles.")
-            img = ImageOps.exif_transpose(img).convert("RGB")
+            img = ImageOps.exif_transpose(img)
+            if img.mode in ("RGBA", "LA") or "transparency" in img.info:
+                rgba = img.convert("RGBA")
+                img = Image.new("RGB", rgba.size, "white")
+                img.paste(rgba, mask=rgba.getchannel("A"))
+            else:
+                img = img.convert("RGB")
             img.thumbnail((1000, 1000))
             out = io.BytesIO()
             img.save(out, format="JPEG", quality=85)
@@ -164,7 +171,13 @@ class Inventory:
 
     @staticmethod
     def _movement(conn, sku, delta, balance, kind, reason, sale_id=None, request_key=None):
-        conn.execute(insert(movements).values(id=str(uuid4()), created_at=now(), sku=sku,
+        # The product write serializes movements for this SKU. Clocks can repeat
+        # or move backwards; keep its balance history in transaction order.
+        stamp = now()
+        previous = conn.execute(select(func.max(movements.c.created_at)).where(movements.c.sku == sku)).scalar_one()
+        if previous and stamp <= previous:
+            stamp = (datetime.fromisoformat(previous) + timedelta(microseconds=1)).isoformat(timespec="microseconds")
+        conn.execute(insert(movements).values(id=str(uuid4()), created_at=stamp, sku=sku,
             delta=delta, balance=balance, kind=kind, reason=reason, sale_id=sale_id, request_key=request_key))
 
     def list_products(self, include_archived=False):
@@ -193,9 +206,9 @@ class Inventory:
         values["sku"] = values["sku"].upper()
         if not values["sku"] or len(values["sku"]) > 60 or not all(c.isalnum() or c in "-_" for c in values["sku"]):
             raise InventoryError("La referencia admite hasta 60 letras, números, guiones o guiones bajos.")
-        for field, limit in (("name", 200), ("brand", 80), ("category", 80)):
+        for field, label, limit in (("name", "el nombre del artículo", 200), ("brand", "la marca", 80), ("category", "la categoría", 80)):
             if not values[field] or len(values[field]) > limit:
-                raise InventoryError(f"Completa {field} (máximo {limit} caracteres).")
+                raise InventoryError(f"Completa {label} (máximo {limit} caracteres).")
         if len(values["notes"]) > 3000 or len(values["compatibility"]) > 1500:
             raise InventoryError("Acorta las notas o la lista de compatibilidad.")
         values.update(price_cents=integer(item["price_cents"], "Precio", maximum=999999999),
@@ -210,7 +223,10 @@ class Inventory:
         if real_photos is not None:
             if len(real_photos) > 8:
                 raise InventoryError("Puedes guardar hasta 8 fotos reales por artículo.")
-            real_photos = [clean_image(raw) for raw in real_photos]
+            # Existing photos are already sanitized; recompressing them on each
+            # gallery edit progressively degrades the customer's product photos.
+            stored = {photo["image_data"] for photo in self.list_photos(values["sku"])} if expected_version is not None else set()
+            real_photos = [raw if raw in stored else clean_image(raw) for raw in real_photos]
         try:
             with self.engine.begin() as conn:
                 if expected_version is None:
@@ -296,7 +312,7 @@ class Inventory:
                         raise InventoryError(f"{sku}: cambió el precio, se archivó o no tiene suficientes unidades. Revisa el carrito.")
                     product = conn.execute(select(products).where(products.c.sku == sku)).mappings().one()
                     total += qty * price
-                    if total > 2000000000:
+                    if total > MAX_TOTAL_CENTS:
                         raise InventoryError("El total excede el máximo permitido por venta.")
                     conn.execute(insert(sale_items).values(id=str(uuid4()), sale_id=sale_id, sku=sku,
                         name=product["name"], quantity=qty, unit_price_cents=price))
@@ -324,8 +340,11 @@ class Inventory:
             items = conn.execute(select(sale_items).where(sale_items.c.sale_id == sale_id)
                                  .order_by(sale_items.c.sku)).mappings().all()
             for item in items:
-                conn.execute(update(products).where(products.c.sku == item["sku"])
+                result = conn.execute(update(products).where(products.c.sku == item["sku"],
+                    products.c.stock + item["quantity"] <= 10000000)
                     .values(stock=products.c.stock + item["quantity"], version=products.c.version + 1))
+                if result.rowcount != 1:
+                    raise InventoryError(f"{item['sku']}: la devolución supera el límite de existencias. Revisa el inventario antes de anular.")
                 balance = conn.execute(select(products.c.stock).where(products.c.sku == item["sku"])).scalar_one()
                 self._movement(conn, item["sku"], item["quantity"], balance, "void", reason.strip(), sale_id)
         return True
@@ -372,10 +391,13 @@ class Inventory:
                 snapshot = {}
                 for sku, entry in cart.items():
                     qty = integer(entry["quantity"], "Cantidad", minimum=1, maximum=10000)
+                    integer(entry["price_cents"], "Precio", maximum=999999999)
                     p = conn.execute(select(products).where(products.c.sku == sku)).mappings().first()
                     if not p or not p["active"] or p["stock"] < qty or p["price_cents"] != entry["price_cents"]:
                         raise InventoryError(f"{sku}: cambiaron precio o existencias. Revisa el pedido.")
                     snapshot[sku] = {"quantity": qty, "price_cents": p["price_cents"], "name": p["name"]}
+                if sum(item["quantity"] * item["price_cents"] for item in snapshot.values()) > MAX_TOTAL_CENTS:
+                    raise InventoryError("El total del pedido supera el límite permitido. Reduce las cantidades.")
                 row = dict(id=str(uuid4()), created_at=now(), request_key=request_key, source=source,
                            customer=customer, phone=phone, items=json.dumps(snapshot), original_items=json.dumps(snapshot),
                            status="pending", version=1, sale_id=None)
@@ -400,6 +422,8 @@ class Inventory:
         for item in cart.values():
             integer(item["quantity"], "Cantidad", minimum=1, maximum=10000)
             integer(item["price_cents"], "Precio", maximum=999999999)
+        if status != "cancelled" and sum(item["quantity"] * item["price_cents"] for item in cart.values()) > MAX_TOTAL_CENTS:
+            raise InventoryError("El total del pedido supera el límite permitido. Reduce las cantidades.")
         with self.engine.begin() as conn:
             result = conn.execute(update(inquiries).where(inquiries.c.id == inquiry_id, inquiries.c.version == version,
                 inquiries.c.status.in_(["pending", "contacted"]))

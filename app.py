@@ -14,12 +14,11 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import streamlit as st
-import streamlit.components.v1 as components
 from sqlalchemy.exc import SQLAlchemyError
 
 import auth
 from ticket import ticket_png
-from inventory import Inventory, InventoryError, ROOT, cents, clean_image
+from inventory import Inventory, InventoryError, ROOT, MAX_TOTAL_CENTS, cents, clean_image
 
 st.set_page_config(page_title="IMPORTADORA · Catálogo e inventario", page_icon="📦", layout="wide",
                    initial_sidebar_state="auto")
@@ -101,8 +100,10 @@ def flash(message):
 
 
 def reset_catalog_filters():
-    for key in ("search", "catalog_brand", "catalog_category", "catalog_order", "catalog_stock", "catalog_page", "catalog_filters"):
-        st.session_state.pop(key, None)
+    # Explicit values also reset the browser widgets during a fragment rerun.
+    st.session_state.update(search="", catalog_brand="Todas las marcas", catalog_category="Todas las categorías",
+                            catalog_order="Referencia", catalog_stock=True, catalog_page=1)
+    st.session_state.pop("catalog_filters", None)
 
 
 def search_text(value):
@@ -150,8 +151,8 @@ def photo_markup(product):
         y = max(0, min(100, int(product.get("image_y", 50))))
         return (f'<div class="product-photo" tabindex="0" aria-label="Ampliar foto de {escape(product["name"])}" '
                 f'style="--photo-zoom:{zoom};--photo-hover:{zoom * 1.08};--photo-x:{x}%;--photo-y:{y}%">'
-                f'<img alt="{escape(product["name"])}" src="data:{mime};base64,{base64.b64encode(raw).decode()}"></div>')
-    return '<div class="product-photo"><span style="font-size:52px">◇</span></div>'
+                f'<img loading="lazy" decoding="async" alt="{escape(product["name"])}" src="data:{mime};base64,{base64.b64encode(raw).decode()}"></div>')
+    return '<div class="product-photo photo-placeholder"><span aria-hidden="true">◇</span><span>Sin foto disponible</span></div>'
 
 
 def title(kicker, heading, description=""):
@@ -161,17 +162,19 @@ def title(kicker, heading, description=""):
 
 
 def product_summary(p):
+    stock_class = "empty" if not p["active"] or not p["stock"] else "low" if p["stock"] <= p["low_stock"] else ""
+    stock_text = "Archivado" if not p["active"] else f'{p["stock"]} disponibles' if p["stock"] else "Agotado"
     st.html('<div class="cart-product">' + photo_markup(p) +
             f'<div><div class="product-ref">{escape(p["sku"])}</div>'
             f'<div class="product-title">{escape(p["name"])}</div>'
             f'<div class="cart-unit">{money(p["price_cents"])}</div>'
-            f'<span class="stock">{p["stock"]} disponibles</span>'
+            f'<span class="stock {stock_class}">{stock_text}</span>'
             f'<p class="muted">{"Activo" if p["active"] else "Archivado"}</p></div></div>')
 
 
 def photo_reel(photos):
     st.html('<div class="photo-reel" tabindex="0" aria-label="Fotos reales; desliza para ver más">' +
-            ''.join(f'<figure tabindex="0"><img alt="Foto real {index + 1}" src="data:image/jpeg;base64,{base64.b64encode(raw).decode()}">'
+            ''.join(f'<figure tabindex="0" aria-label="Ampliar foto real {index + 1}"><img loading="lazy" decoding="async" alt="Foto real {index + 1}" src="data:image/jpeg;base64,{base64.b64encode(raw).decode()}">'
                     f'<figcaption>Foto {index + 1} de {len(photos)}</figcaption></figure>'
                     for index, raw in enumerate(photos)) + '</div>')
 
@@ -210,12 +213,13 @@ def catalogue(seller, storefront=False):
             '<span class="hero-badge">● &nbsp; Existencias actualizadas cada 30 segundos</span></div>')
     st.html(f'<div class="section-line"><h2>Encuentra tu modelo</h2><span class="muted">{len(all_items)} referencias · {sum(p["stock"] for p in all_items):,} unidades disponibles</span></div>')
     search = st.text_input("Buscar por modelo o referencia", placeholder="Ej. A26, iPhone 14, A06-01…", key="search", icon=":material/search:")
-    cols = st.columns([1, 1, 1])
-    brand = cols[0].selectbox("Marca", ["Todas las marcas"] + sorted({p["brand"] for p in all_items}), key="catalog_brand")
-    category = cols[1].selectbox("Categoría", ["Todas las categorías"] + sorted({p["category"] for p in all_items}), key="catalog_category")
-    order = cols[2].selectbox("Ordenar", ["Referencia", "Menor precio", "Mayor precio", "Más disponibles"], key="catalog_order")
-    only_stock = st.toggle("Solo artículos disponibles", value=True, key="catalog_stock")
-    st.button("Limpiar filtros", on_click=reset_catalog_filters)
+    with (st.expander("Filtrar y ordenar") if storefront else st.container()):
+        cols = st.columns([1, 1, 1])
+        brand = cols[0].selectbox("Marca", ["Todas las marcas"] + sorted({p["brand"] for p in all_items}), key="catalog_brand")
+        category = cols[1].selectbox("Categoría", ["Todas las categorías"] + sorted({p["category"] for p in all_items}), key="catalog_category")
+        order = cols[2].selectbox("Ordenar", ["Referencia", "Menor precio", "Mayor precio", "Más disponibles"], key="catalog_order")
+        only_stock = st.toggle("Solo artículos disponibles", value=True, key="catalog_stock")
+        st.button("Limpiar filtros", on_click=reset_catalog_filters)
     # Repeating the family prefix makes searching "iphone 14" also find "iPhone 13/14".
     def searchable(p):
         value = search_text(" ".join(str(p[k]) for k in ("sku", "name", "compatibility", "brand", "category")))
@@ -233,6 +237,7 @@ def catalogue(seller, storefront=False):
     st.caption(f"{len(items)} resultados · Precios mayoristas en dólares estadounidenses")
     if not items:
         st.html('<div class="empty-state"><strong>No encontramos ese modelo</strong>Prueba otra referencia o cambia los filtros.</div>')
+        st.button("Restablecer búsqueda", on_click=reset_catalog_filters)
         return
     pages = max(1, (len(items) + 11) // 12)
     filters = (search, brand, category, order, only_stock)
@@ -265,7 +270,7 @@ def catalogue(seller, storefront=False):
                                  icon=":material/add_shopping_cart:"):
                         if not auth.authenticated(ENCODED):
                             st.rerun()
-                        cart[p["sku"]] = {"quantity": in_cart + 1, "price_cents": p["price_cents"]}
+                        cart[p["sku"]] = {"quantity": in_cart + 1, "price_cents": cart.get(p["sku"], {}).get("price_cents", p["price_cents"])}
                         st.session_state.pop(f"qty_{p['sku']}", None)
                         new_cart_key()
                         st.toast(f"{p['sku']} agregado")
@@ -309,13 +314,13 @@ def sale_view(sale):
     if st.session_state.get("download_sale") == sale["id"]:
         st.session_state.pop("download_sale", None)
         encoded = base64.b64encode(png).decode("ascii")
-        components.html(f'''<script>
+        st.iframe(f'''<script>
         const doc = window.parent.document;
         const a = doc.createElement('a');
         a.href = "data:image/png;base64,{encoded}";
         a.download = "ticket-{sale['id'][:8]}.png";
         doc.body.appendChild(a); a.click(); a.remove();
-        </script>''', height=0)
+        </script>''', height=1, tab_index=-1)
         st.caption("Ticket listo. Si tu navegador no inició la descarga, toca «Descargar ticket en imagen».")
     st.write(f"**Venta {sale['id'][:8].upper()} · {sale['customer']}**")
     st.caption(f"{local_time(sale['created_at']).strftime('%d/%m/%Y %H:%M')} · {sale['payment']} · {'Anulada' if sale['status']=='voided' else 'Confirmada'}")
@@ -333,9 +338,12 @@ def cart_page():
         with st.expander("Última venta registrada", expanded=bool(st.session_state.get("download_sale")) or not st.session_state["cart"]):
             sale_view(db.get_sale(st.session_state["last_sale"]))
     cart = st.session_state["cart"]
+    st.button("Seguir agregando productos" if cart else "Ir al catálogo",
+              on_click=lambda: st.session_state.update(nav="Catálogo"), width="stretch")
     if not cart:
         st.html('<div class="empty-state"><strong>Tu carrito está listo para comenzar</strong>Entra al catálogo y agrega los artículos que tu cliente eligió.</div>')
         return
+    st.button("Actualizar disponibilidad", key="refresh_sale")
     total = 0
     invalid = False
     for sku, entry in list(cart.items()):
@@ -351,14 +359,20 @@ def cart_page():
                 with st.expander(f"Foto real · {len(real)} fotos", expanded=True):
                     st.caption("Desliza para ver las fotos. En computadora, pasa el mouse para ampliar.")
                     photo_reel([r["image_data"] for r in real])
+            quantity_key = f"qty_{sku}"
+            st.session_state.setdefault(quantity_key, entry["quantity"])
             qty = st.number_input(f"Cantidad · {sku}", min_value=1, max_value=10000000,
-                                   value=entry["quantity"], step=1, key=f"qty_{sku}")
+                                   step=1, key=quantity_key)
             if qty != entry["quantity"]:
                 cart[sku]["quantity"] = qty
                 new_cart_key()
             if not p["active"] or qty > p["stock"]:
                 st.error("Este artículo no está disponible en esa cantidad. Modifica las unidades o retíralo.")
                 invalid = True
+                if p["active"] and p["stock"]:
+                    st.button(f"Usar disponibles ({p['stock']})", key=f"fit_sale_{sku}", width="stretch",
+                              on_click=lambda key, value: st.session_state.update({key: value}),
+                              args=(f"qty_{sku}", p["stock"]))
             if entry["price_cents"] != p["price_cents"]:
                 invalid = True
                 st.warning(f"El precio cambió de {money(entry['price_cents'])} a {money(p['price_cents'])}.")
@@ -377,6 +391,9 @@ def cart_page():
     st.html(f'<div class="cart-total"><div><div class="eyebrow">Total para el cliente · USD</div>'
             f'<div class="muted">{sum(e["quantity"] for e in cart.values())} unidades · {len(cart)} productos</div></div>'
             f'<div class="receipt-total">{money(total)}</div></div>')
+    if total > MAX_TOTAL_CENTS:
+        st.error("El total supera el límite permitido. Reduce las cantidades para continuar.")
+        invalid = True
     with st.form("checkout"):
         customer = st.text_input("Cliente (opcional)", max_chars=200, placeholder="Cliente general")
         payment = st.selectbox("Medio de pago", ["Efectivo", "Transferencia", "Tarjeta", "Otro"])
@@ -401,15 +418,23 @@ def product_form(product=None):
                     "price_cents": 0, "low_stock": 5, "notes": "", "active": True, "stock": 0}
     identity = f"{p['sku']}_{p['version']}" if product else f"new_{st.session_state.get('new_product_revision', 0)}"
     st.subheader("Fotografías del artículo")
-    photo = st.file_uploader("Foto del artículo (máximo 5 MB)", type=["jpg", "jpeg", "png", "webp"], key=f"cover_{identity}")
+    photo = st.file_uploader("Foto del artículo (máximo 5 MB)", type=["jpg", "jpeg", "png", "webp"],
+                             max_upload_size=5, key=f"cover_{identity}")
+    photo_errors = []
+    cover = None
+    if photo:
+        try:
+            cover = clean_image(photo.getvalue())
+        except InventoryError as error:
+            photo_errors.append(f"Foto principal: {error}")
     with st.container(border=True, key="image_editor"):
         st.markdown("**Encuadre de la foto en las tarjetas**")
         zoom = st.slider("Zoom de la imagen (%)", 100, 200, int(p.get("image_zoom", 115)), step=5, key=f"zoom_{identity}")
         x = st.slider("Centro horizontal (%)", 0, 100, int(p.get("image_x", 50)), key=f"image_x_{identity}")
         y = st.slider("Centro vertical (%)", 0, 100, int(p.get("image_y", 50)), key=f"image_y_{identity}")
         preview = dict(p, image_zoom=zoom, image_x=x, image_y=y)
-        if photo:
-            preview["image_data"] = clean_image(photo.getvalue())
+        if cover:
+            preview["image_data"] = cover
         st.html('<div class="image-preview">' + photo_markup(preview) + '</div>')
         st.caption("100 % muestra la imagen completa. Ajusta el centro para ampliar la zona deseada. Se aplica al catálogo, inventario y carrito al guardar.")
     existing = db.list_photos(p["sku"]) if product else []
@@ -419,12 +444,24 @@ def product_form(product=None):
                             format_func=lambda value: f"Foto {next(i + 1 for i, r in enumerate(existing) if r['id'] == value)}",
                             key=f"remove_photos_{identity}") if existing else []
     uploads = st.file_uploader("Añadir fotos reales (hasta 8 en total, máximo 5 MB cada una)",
-                               type=["jpg", "jpeg", "png", "webp"], accept_multiple_files=True, key=f"real_{identity}")
-    prepared = [clean_image(f.getvalue()) for f in uploads]
+                               type=["jpg", "jpeg", "png", "webp"], accept_multiple_files=True,
+                               max_upload_size=5, key=f"real_{identity}")
+    remaining = len(existing) - len(removed)
+    prepared = []
+    if remaining + len(uploads) > 8:
+        photo_errors.append(f"Hay {remaining + len(uploads)} fotos reales seleccionadas; el máximo es 8. Quita algunas para guardar.")
+    else:
+        for uploaded in uploads:
+            try:
+                prepared.append(clean_image(uploaded.getvalue()))
+            except InventoryError as error:
+                photo_errors.append(f"{uploaded.name}: {error}")
+    for error in photo_errors:
+        st.error(error)
     if prepared:
         photo_reel(prepared)
-    st.caption("Las fotos se guardan al crear el artículo o guardar los cambios. Las fotos reales aparecen en el carrito.")
-    with st.form(f"product_{identity}", clear_on_submit=not bool(product)):
+    st.caption(f"{remaining + len(prepared)} de 8 fotos reales. Los cambios se guardan con el artículo; las fotos reales aparecen en el carrito.")
+    with st.form(f"product_{identity}"):
         sku = st.text_input("Referencia única", value=p["sku"], disabled=bool(product), max_chars=60)
         name = st.text_input("Nombre del artículo", value=p["name"], max_chars=200)
         compatibility = st.text_input("Modelos compatibles", value=p["compatibility"], max_chars=1500,
@@ -438,12 +475,12 @@ def product_form(product=None):
         stock = st.number_input("Unidades iniciales", min_value=0, max_value=10000000, value=0, step=1) if not product else p["stock"]
         notes = st.text_area("Notas del artículo (visibles en el catálogo)", value=p["notes"], max_chars=3000)
         active = st.checkbox("Artículo activo en el catálogo", value=p["active"])
-        if st.form_submit_button("Guardar cambios" if product else "Crear artículo", type="primary"):
+        if st.form_submit_button("Guardar cambios" if product else "Crear artículo", type="primary", disabled=bool(photo_errors), width="stretch"):
             db.save_product(dict(sku=sku, name=name, compatibility=compatibility, brand=brand, category=category,
                 price_cents=cents(f"{price:.2f}"), low_stock=int(low), stock=int(stock), notes=notes, active=active,
                 image_zoom=zoom, image_x=x, image_y=y),
-                expected_version=p["version"] if product else None, image=photo.getvalue() if photo else None,
-                real_photos=([r["image_data"] for r in existing if r["id"] not in removed] + prepared) if uploads or removed else None)
+                expected_version=p["version"] if product else None, image=photo.getvalue() if cover else None,
+                real_photos=([r["image_data"] for r in existing if r["id"] not in removed] + [f.getvalue() for f in uploads]) if uploads or removed else None)
             st.session_state.pop("editing_product", None)
             if not product:
                 st.session_state["new_product_revision"] = st.session_state.get("new_product_revision", 0) + 1
@@ -464,9 +501,11 @@ def inventory_page():
         product_form()
         return
     if action == "Existencias":
-        search = st.text_input("Buscar en inventario")
-        low_only = st.checkbox("Mostrar solo existencias bajas o agotadas")
-        filtered = [p for p in items if search.casefold() in (p["sku"] + " " + p["name"] + " " + p["compatibility"]).casefold()
+        search = st.text_input("Buscar en inventario", key="inventory_search", placeholder="Modelo, referencia, marca o categoría")
+        low_only = st.checkbox("Mostrar solo existencias bajas o agotadas", key="inventory_low")
+        st.button("Limpiar filtros de inventario", on_click=lambda: st.session_state.update(inventory_search="", inventory_low=False, inventory_page=1))
+        terms = search_text(search).split()
+        filtered = [p for p in items if all(term in search_text(" ".join(p[k] for k in ("sku", "name", "compatibility", "brand", "category"))) for term in terms)
                     and (not low_only or p["stock"] <= p["low_stock"])]
         rows = inventory_rows(filtered)
         view = st.radio("Vista de inventario", ["Con fotos", "Tabla"], horizontal=True)
@@ -474,7 +513,12 @@ def inventory_page():
             st.dataframe(rows, hide_index=True, width="stretch")
         else:
             pages = max(1, (len(filtered) + 11) // 12)
-            page = st.selectbox("Página de inventario", range(1, pages + 1)) if pages > 1 else 1
+            filters = (search, low_only)
+            if st.session_state.get("inventory_filters") != filters or st.session_state.get("inventory_page", 1) > pages:
+                st.session_state["inventory_page"] = 1
+            st.session_state["inventory_filters"] = filters
+            page = st.selectbox("Página de inventario", range(1, pages + 1), key="inventory_page",
+                                format_func=lambda n: f"Página {n} de {pages}") if pages > 1 else 1
             with st.container(horizontal=True, key="inventory_grid"):
                 for p in filtered[(page-1)*12:page*12]:
                     with st.container(border=True, width=280, key=f"inventory_card_{p['sku']}"):
@@ -503,7 +547,7 @@ def inventory_page():
         product_form(st.session_state["editing_product"])
     else:
         st.info(f"{p['sku']} · {p['stock']} unidades disponibles")
-        with st.form("adjustment", clear_on_submit=True):
+        with st.form(f"adjustment_{sku}_{st.session_state['adjust_request']}"):
             kind = st.selectbox("Tipo de movimiento", ["Entrada de mercancía", "Salida por ajuste"])
             qty = st.number_input("Unidades del movimiento", min_value=1, max_value=10000000, value=1, step=1)
             reason = st.text_input("Motivo obligatorio", placeholder="Compra al proveedor, daño, conteo físico…", max_chars=1000)

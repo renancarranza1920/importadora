@@ -1,13 +1,15 @@
 """Portable customer ticket rendered from the confirmed sale snapshot."""
 import io
+from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
 
 def ticket_png(sale):
-    font = ImageFont.load_default(size=26)
-    small = ImageFont.load_default(size=21)
-    heading = ImageFont.load_default(size=40)
+    font_path = Path(__file__).resolve().parent / "assets/fonts/NotoSans-Regular.ttf"
+    font = ImageFont.truetype(str(font_path), size=26)
+    small = ImageFont.truetype(str(font_path), size=21)
+    heading = ImageFont.truetype(str(font_path), size=40)
     measure = ImageDraw.Draw(Image.new("RGB", (1, 1)))
 
     def wrap(text, width=620):

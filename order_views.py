@@ -6,7 +6,8 @@ from urllib.parse import urlencode, parse_qs, urlparse
 from uuid import uuid4
 
 import streamlit as st
-import streamlit.components.v1 as components
+
+from inventory import MAX_TOTAL_CENTS
 
 WHATSAPP = "50373113611"
 API_VERSION = 2
@@ -46,10 +47,11 @@ def review_items(db, cart, prefix, summary, reel=None):
             if photos and reel:
                 with st.expander(f"Foto real · {len(photos)} fotos"):
                     reel([photo["image_data"] for photo in photos])
-            st.caption(f"En este pedido: {entry['quantity']} · Disponibles ahora: {available}")
             key = f"request_qty_{prefix}_{sku}"
+            st.session_state.setdefault(key, entry["quantity"])
             qty = st.number_input(f"Cantidad · {sku}", min_value=0, max_value=10000,
-                                  value=entry["quantity"], step=1, key=key)
+                                  step=1, key=key)
+            st.caption(f"En este pedido: {qty} · Disponibles ahora: {available}")
             if qty > available:
                 st.warning("Agotado o archivado. Quita este artículo para continuar." if not available else f"Solo quedan {available}. Puedes ajustar la cantidad.")
                 st.button(f"Usar disponibles ({available})", key=f"fit_{prefix}_{sku}", on_click=set_value,
@@ -68,39 +70,46 @@ def review_items(db, cart, prefix, summary, reel=None):
                 st.write(f"**Subtotal: {money(qty * price)}**")
             else:
                 st.caption("Este artículo no se incluirá.")
-    st.metric("Total estimado (USD)", money(total(revised)))
+    st.html(f'<div class="cart-total"><div><div class="eyebrow">Total estimado · USD</div>'
+            f'<div class="muted">{sum(item["quantity"] for item in revised.values())} unidades · {len(revised)} productos</div></div>'
+            f'<div class="receipt-total">{money(total(revised))}</div></div>')
+    if total(revised) > MAX_TOTAL_CENTS:
+        st.error("El total del pedido supera el límite permitido. Reduce las cantidades para continuar.")
+        invalid = True
     return revised, invalid or not revised
 
 
 def public_order(db, summary, reel=None, nav_key="nav"):
     st.title("Mi pedido")
     st.caption("Revisa tus productos. El pedido no reserva unidades ni confirma una compra.")
+    cart = st.session_state["public_cart"]
     last = st.session_state.get("last_inquiry")
     if last:
-        st.success(f"Solicitud {last['id'][:8].upper()} registrada.")
-        with st.expander("Ver la solicitud registrada"):
+        with st.expander("Solicitud anterior" if cart else "Solicitud registrada", expanded=not bool(cart)):
+            st.success(f"Solicitud {last['id'][:8].upper()} registrada.")
             for sku, item in json.loads(last["items"]).items():
-                st.write(f"{sku} · {item['name']} · {item['quantity']} × {money(item['price_cents'])}")
+                st.text(f"{sku} · {item['name']} · {item['quantity']} × {money(item['price_cents'])}")
             st.write(f"**Total estimado: {money(total(json.loads(last['items'])))} USD**")
-        st.link_button("Continuar en WhatsApp", whatsapp_link(last), type="primary", width="stretch")
+            st.link_button("Continuar en WhatsApp", whatsapp_link(last), type="primary", width="stretch")
+            st.caption("Si WhatsApp no se abrió, toca «Continuar en WhatsApp» y pulsa Enviar en el chat. Registrar la solicitud no envía el mensaje automáticamente.")
         if st.session_state.pop("open_order_whatsapp", False):
             target = json.dumps(whatsapp_link(last))
-            components.html(f'''<script>
+            st.iframe(f'''<script>
             const a = window.parent.document.createElement('a');
             a.href = {target}; a.target = '_blank'; a.rel = 'noopener noreferrer';
             window.parent.document.body.appendChild(a); a.click(); a.remove();
-            </script>''', height=0)
-        st.caption("Si WhatsApp no se abrió, toca «Continuar en WhatsApp». Funciona con la app o WhatsApp Web.")
-        st.caption("Abre WhatsApp y pulsa Enviar para coordinar la confirmación. Registrar la solicitud no envía el mensaje automáticamente.")
-    cart = st.session_state["public_cart"]
+            </script>''', height=1, tab_index=-1)
+    st.button("Seguir agregando productos" if cart else "Ver catálogo", on_click=set_value, args=(nav_key, "Catálogo"), width="stretch")
     if not cart:
-        st.info("Agrega productos desde el catálogo para preparar un pedido.")
-        st.button("Ver catálogo", on_click=set_value, args=(nav_key, "Catálogo"), width="stretch")
+        if not last:
+            st.info("Agrega productos desde el catálogo para preparar un pedido.")
         return
+    st.button("Actualizar disponibilidad", key="refresh_public")
     revised, invalid = review_items(db, cart, "public", summary, reel)
     if revised != cart:
         st.session_state["public_cart"] = revised
         st.session_state["public_request"] = str(uuid4())
+        st.rerun()
     with st.form("public_order"):
         customer = st.text_input("Tu nombre (opcional)", max_chars=100)
         st.caption("Al continuar se guarda tu solicitud y se abre WhatsApp con el pedido preparado.")
@@ -131,7 +140,7 @@ def inquiries_page(db, summary, sale_view, reel=None):
     selected = st.selectbox("Selecciona una solicitud", [r["id"] for r in rows],
         format_func=lambda value: next(f"{r['id'][:8].upper()} · {r['customer']} · {STATUSES[r['status']]}" for r in rows if r["id"] == value))
     row = next(r for r in rows if r["id"] == selected)
-    st.write(f"**{row['customer']}** · {row['phone']}")
+    st.text(row["customer"] + (f" · {row['phone']}" if row["phone"] else ""))
     st.caption(f"Solicitud {selected[:8].upper()} · {STATUSES[row['status']]}")
     original, cart = json.loads(row["original_items"]), json.loads(row["items"])
     with st.expander("Pedido original del cliente"):
@@ -146,7 +155,7 @@ def inquiries_page(db, summary, sale_view, reel=None):
     changed = revised != cart
     if changed:
         st.info("Guarda los cambios antes de confirmar la venta. Acuerda los ajustes con el cliente.")
-    if st.button("Guardar ajustes del pedido", disabled=not revised, width="stretch"):
+    if st.button("Guardar ajustes del pedido", disabled=not revised or not changed, width="stretch"):
         db.update_inquiry(selected, row["version"], revised, row["status"])
         st.rerun()
     with st.expander("Ofrecer otro producto disponible"):
