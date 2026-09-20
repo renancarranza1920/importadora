@@ -7,6 +7,7 @@ import hashlib
 import io
 import logging
 import os
+import re
 import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -42,6 +43,7 @@ TZ = ZoneInfo(str(config("TIMEZONE", "America/El_Salvador")))
 PRODUCTION = str(config("APP_ENV", "production")) == "production"
 PUBLIC = is_true(config("PUBLIC_CATALOG", True))
 ENCODED = auth.configured_hash(config, PRODUCTION)
+PRODUCTS_PER_PAGE = 30
 
 
 def load_order_views():
@@ -108,6 +110,38 @@ def reset_catalog_filters():
 
 def search_text(value):
     return "".join(c for c in unicodedata.normalize("NFKD", str(value).casefold()) if not unicodedata.combining(c))
+
+
+def product_matches(product, query):
+    """Match whole model names as well as catalog abbreviations such as 17PM."""
+    models = str(product.get("compatibility") or product.get("name") or "")
+    variants = [part.strip() for part in models.split("/")]
+    family = re.match(r"^(iphone|galaxy(?:\s+note)?|note)\s+", variants[0], re.I)
+    aliases = [models]
+    if family:
+        aliases.extend(f"{family.group(0)}{part}" for part in variants[1:])
+    aliases.extend(re.sub(r"(\d+)\s*pm\b", r"\1 Pro Max", name, flags=re.I)
+                   for name in list(aliases))
+    fields = [product.get(key) or "" for key in ("sku", "name", "brand", "category")]
+    searchable = " ".join(re.sub(r"[^a-z0-9]", "", search_text(value)) for value in fields + aliases)
+    return all(re.sub(r"[^a-z0-9]", "", term) in searchable
+               for term in search_text(query).split())
+
+
+def change_page(key, page):
+    st.session_state[key] = page
+
+
+def page_buttons(key, page, pages):
+    if pages <= 1:
+        return
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.button("Anterior", key=f"{key}_previous", disabled=page == 1,
+                  icon=":material/chevron_left:", on_click=change_page, args=(key, page - 1))
+        st.caption(f"Página {page} de {pages}")
+        st.button("Siguiente", key=f"{key}_next", disabled=page == pages,
+                  icon=":material/chevron_right:", icon_position="right",
+                  on_click=change_page, args=(key, page + 1))
 
 
 def new_cart_key():
@@ -212,7 +246,7 @@ def catalogue(seller, storefront=False):
             '<p>Explora los modelos, encuentra el protector ideal y consulta las unidades disponibles.</p>'
             '<span class="hero-badge">● &nbsp; Existencias actualizadas cada 30 segundos</span></div>')
     st.html(f'<div class="section-line"><h2>Encuentra tu modelo</h2><span class="muted">{len(all_items)} referencias · {sum(p["stock"] for p in all_items):,} unidades disponibles</span></div>')
-    search = st.text_input("Buscar por modelo o referencia", placeholder="Ej. A26, iPhone 14, A06-01…", key="search", icon=":material/search:")
+    search = st.text_input("Buscar por modelo o referencia", placeholder="Ej. A26, iPhone 17 Pro Max, A06-01…", key="search", icon=":material/search:")
     with (st.expander("Filtrar y ordenar") if storefront else st.container()):
         cols = st.columns([1, 1, 1])
         brand = cols[0].selectbox("Marca", ["Todas las marcas"] + sorted({p["brand"] for p in all_items}), key="catalog_brand")
@@ -220,16 +254,7 @@ def catalogue(seller, storefront=False):
         order = cols[2].selectbox("Ordenar", ["Referencia", "Menor precio", "Mayor precio", "Más disponibles"], key="catalog_order")
         only_stock = st.toggle("Solo artículos disponibles", value=True, key="catalog_stock")
         st.button("Limpiar filtros", on_click=reset_catalog_filters)
-    # Repeating the family prefix makes searching "iphone 14" also find "iPhone 13/14".
-    def searchable(p):
-        value = search_text(" ".join(str(p[k]) for k in ("sku", "name", "compatibility", "brand", "category")))
-        compact = value.casefold().replace(" ", "")
-        terms = search_text(search).split()
-        for term in terms:
-            if term not in value.casefold() and term.replace(" ", "") not in compact:
-                return False
-        return True
-    items = [p for p in all_items if searchable(p) and (brand == "Todas las marcas" or p["brand"] == brand)
+    items = [p for p in all_items if product_matches(p, search) and (brand == "Todas las marcas" or p["brand"] == brand)
              and (category == "Todas las categorías" or p["category"] == category) and (not only_stock or p["stock"] > 0)]
     if order != "Referencia":
         items.sort(key=lambda p: p["stock"] if order == "Más disponibles" else p["price_cents"],
@@ -239,14 +264,14 @@ def catalogue(seller, storefront=False):
         st.html('<div class="empty-state"><strong>No encontramos ese modelo</strong>Prueba otra referencia o cambia los filtros.</div>')
         st.button("Restablecer búsqueda", on_click=reset_catalog_filters)
         return
-    pages = max(1, (len(items) + 11) // 12)
+    pages = max(1, (len(items) + PRODUCTS_PER_PAGE - 1) // PRODUCTS_PER_PAGE)
     filters = (search, brand, category, order, only_stock)
     if st.session_state.get("catalog_filters") != filters or st.session_state.get("catalog_page", 1) > pages:
         st.session_state["catalog_page"] = 1
     st.session_state["catalog_filters"] = filters
-    page = st.selectbox("Página de resultados", list(range(1, pages + 1)), key="catalog_page", format_func=lambda n: f"Página {n} de {pages}") if pages > 1 else 1
+    page = st.session_state.get("catalog_page", 1)
     with st.container(horizontal=True, gap="small", key="catalog_grid"):
-        for p in items[(page - 1) * 12:page * 12]:
+        for p in items[(page - 1) * PRODUCTS_PER_PAGE:page * PRODUCTS_PER_PAGE]:
             with st.container(width=255, border=True, key=f"card_{p['sku']}"):
                 stock_class = "empty" if not p["stock"] else "low" if p["stock"] <= p["low_stock"] else ""
                 stock_text = f"{p['stock']} disponibles" if p["stock"] else "Agotado"
@@ -288,6 +313,7 @@ def catalogue(seller, storefront=False):
                             st.session_state["public_request"] = str(uuid4())
                             st.toast("Producto agregado a tu pedido")
                             st.rerun()
+    page_buttons("catalog_page", page, pages)
     st.caption("Disponibilidad informativa hasta confirmar la venta. Las compatibilidades proceden del catálogo suministrado.")
 
 
@@ -504,27 +530,26 @@ def inventory_page():
         search = st.text_input("Buscar en inventario", key="inventory_search", placeholder="Modelo, referencia, marca o categoría")
         low_only = st.checkbox("Mostrar solo existencias bajas o agotadas", key="inventory_low")
         st.button("Limpiar filtros de inventario", on_click=lambda: st.session_state.update(inventory_search="", inventory_low=False, inventory_page=1))
-        terms = search_text(search).split()
-        filtered = [p for p in items if all(term in search_text(" ".join(p[k] for k in ("sku", "name", "compatibility", "brand", "category"))) for term in terms)
+        filtered = [p for p in items if product_matches(p, search)
                     and (not low_only or p["stock"] <= p["low_stock"])]
         rows = inventory_rows(filtered)
         view = st.radio("Vista de inventario", ["Con fotos", "Tabla"], horizontal=True)
         if view == "Tabla":
             st.dataframe(rows, hide_index=True, width="stretch")
         else:
-            pages = max(1, (len(filtered) + 11) // 12)
+            pages = max(1, (len(filtered) + PRODUCTS_PER_PAGE - 1) // PRODUCTS_PER_PAGE)
             filters = (search, low_only)
             if st.session_state.get("inventory_filters") != filters or st.session_state.get("inventory_page", 1) > pages:
                 st.session_state["inventory_page"] = 1
             st.session_state["inventory_filters"] = filters
-            page = st.selectbox("Página de inventario", range(1, pages + 1), key="inventory_page",
-                                format_func=lambda n: f"Página {n} de {pages}") if pages > 1 else 1
+            page = st.session_state.get("inventory_page", 1)
             with st.container(horizontal=True, key="inventory_grid"):
-                for p in filtered[(page-1)*12:page*12]:
+                for p in filtered[(page-1)*PRODUCTS_PER_PAGE:page*PRODUCTS_PER_PAGE]:
                     with st.container(border=True, width=280, key=f"inventory_card_{p['sku']}"):
                         product_summary(p)
                         st.button("Editar artículo", key=f"edit_{p['sku']}", on_click=open_inventory, args=(p["sku"], "Editar artículo"), width="stretch")
                         st.button("Reponer / ajustar", key=f"stock_{p['sku']}", on_click=open_inventory, args=(p["sku"], "Reponer / ajustar"), width="stretch")
+            page_buttons("inventory_page", page, pages)
             if not filtered:
                 st.info("No hay artículos para estos filtros.")
         st.caption(f"{len(filtered)} de {len(items)} referencias")

@@ -83,11 +83,14 @@ def test_adjustment_keeps_invalid_input_and_resets_after_success(ui):
 
 def test_inventory_search_page_and_accented_category(ui):
     app, store = ui
+    from test_app import add_extra_products
+    add_extra_products(store, 7)
     login(app)
     navigate(app, "Inventario")
-    app.selectbox(key="inventory_page").set_value(2).run()
+    app.button(key="inventory_page_next").click().run()
+    assert app.session_state["inventory_page"] == 2
     app.text_input(key="inventory_search").set_value("protectores").run()
-    assert app.selectbox(key="inventory_page").value == 1
+    assert app.session_state["inventory_page"] == 1
     p = store.get_product("A06-01")
     store.save_product(dict(p, brand="Genérica", category="Edición especial"), p["version"])
     app.text_input(key="inventory_search").set_value("generica edicion").run()

@@ -43,6 +43,14 @@ def navigate(app, page):
     return no_errors(app.radio(key="nav").set_value(page).run())
 
 
+def add_extra_products(db, amount, start=0):
+    for number in range(start, start + amount):
+        db.save_product(dict(sku=f"EXTRA-{number:02}", name=f"Protector extra {number}",
+                             compatibility=f"Modelo extra {number}", brand="Varios",
+                             category="Protectores", price_cents=100, stock=2,
+                             low_stock=1, notes="", active=True))
+
+
 def test_public_catalog_login_required_and_compatibility_search(ui):
     app, db = ui
     assert not [b for b in app.button if b.key and b.key.startswith("add_")]
@@ -158,16 +166,82 @@ def test_production_missing_configuration_is_closed(monkeypatch):
 
 
 def test_catalog_filters_reset_page_and_empty_results(ui):
-    app, _ = ui
-    app.selectbox(key="catalog_page").set_value(2).run()
+    app, db = ui
+    add_extra_products(db, 7)
+    app.run()
+    app.button(key="catalog_page_next").click().run()
+    assert app.session_state["catalog_page"] == 2
     app.selectbox(key="catalog_order").set_value("Mayor precio").run()
-    assert app.selectbox(key="catalog_page").value == 1
+    assert app.session_state["catalog_page"] == 1
     app.text_input(key="search").set_value("modelo inexistente").run()
     assert not app.expander
     no_errors(button(app, "Limpiar filtros").click().run())
     assert app.text_input(key="search").value == ""
     assert app.selectbox(key="catalog_order").value == "Referencia"
-    assert len(app.expander) == 12
+    assert len(app.expander) == 30
+
+
+def test_catalog_search_accepts_full_iphone_model_names(ui):
+    app, _ = ui
+    for query in ("iPhone 17 Pro Max", "iphone17promax", "17 pro max", "iPhone 17 PM",
+                  "iPhone 18 Pro Max", "18pm"):
+        no_errors(app.text_input(key="search").set_value(query).run())
+        assert len(app.expander) == 3, query
+    no_errors(app.text_input(key="search").set_value("Galaxy A26").run())
+    assert len(app.expander) == 4
+    no_errors(app.text_input(key="search").set_value("iphone 17 pro max inexistente").run())
+    assert len(app.expander) == 0
+
+
+def test_catalog_only_paginates_above_thirty(ui):
+    app, db = ui
+    assert len(app.expander) == 24
+    assert not [b for b in app.button if b.key and b.key.startswith("catalog_page_")]
+    add_extra_products(db, 6)
+    no_errors(app.run())
+    assert len(app.expander) == 30
+    assert not [b for b in app.button if b.key and b.key.startswith("catalog_page_")]
+    add_extra_products(db, 1, start=6)
+    no_errors(app.run())
+    assert len(app.expander) == 30
+    assert app.button(key="catalog_page_previous").disabled
+    assert not app.button(key="catalog_page_next").disabled
+    no_errors(app.button(key="catalog_page_next").click().run())
+    assert len(app.expander) == 1
+    assert app.button(key="catalog_page_next").disabled
+    no_errors(app.button(key="catalog_page_previous").click().run())
+    assert len(app.expander) == 30
+
+
+def test_public_storefront_uses_same_search_and_shows_all_initial_products(ui):
+    app, _ = ui
+    app.query_params["vista"] = "pedidos"
+    no_errors(app.run())
+    assert len([b for b in app.button if b.key and b.key.startswith("request_add_")]) == 24
+    assert not [b for b in app.button if b.key and b.key.startswith("catalog_page_")]
+    no_errors(app.text_input(key="search").set_value("iPhone 17 Pro Max").run())
+    assert len([b for b in app.button if b.key and b.key.startswith("request_add_")]) == 3
+
+
+def test_inventory_only_paginates_above_thirty_and_searches_model_aliases(ui):
+    app, db = ui
+    login(app)
+    navigate(app, "Inventario")
+    assert len([b for b in app.button if b.key and b.key.startswith("edit_")]) == 24
+    assert not [b for b in app.button if b.key and b.key.startswith("inventory_page_")]
+    add_extra_products(db, 6)
+    no_errors(app.run())
+    assert len([b for b in app.button if b.key and b.key.startswith("edit_")]) == 30
+    assert not [b for b in app.button if b.key and b.key.startswith("inventory_page_")]
+    add_extra_products(db, 1, start=6)
+    no_errors(app.run())
+    assert len([b for b in app.button if b.key and b.key.startswith("edit_")]) == 30
+    no_errors(app.button(key="inventory_page_next").click().run())
+    assert len([b for b in app.button if b.key and b.key.startswith("edit_")]) == 1
+    no_errors(app.text_input(key="inventory_search").set_value("iPhone 17 Pro Max").run())
+    assert app.session_state["inventory_page"] == 1
+    assert len([b for b in app.button if b.key and b.key.startswith("edit_")]) == 3
+    assert not [b for b in app.button if b.key and b.key.startswith("inventory_page_")]
 
 
 def test_catalog_search_ignores_accents(ui):
