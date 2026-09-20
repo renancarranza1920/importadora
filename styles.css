@@ -28,15 +28,28 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 .muted {color:#52685c;font-size:13px;}
 .product-photo {display:flex;align-items:center;justify-content:center;background:#f3f5f4;border-radius:13px;height:192px;margin:0 0 14px;overflow:hidden;}
 .product-photo img {width:100%;height:100%;object-fit:contain;}
-.catalog-photo-open {display:block;width:100%;padding:0;border:0;background:transparent;cursor:zoom-in;text-align:left;}
-.catalog-photo-open .product-photo {margin-bottom:0;}
-.catalog-photo-open:focus-visible {outline:3px solid #137b60;outline-offset:3px;border-radius:13px;}
-.photo-open-hint {display:block;color:#52685c;font-size:11px;padding:5px 0 7px;}
-.catalog-photo-dialog {position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:58px 12px 62px;border:0;background:#101918;color:white;box-sizing:border-box;overflow:hidden;}
-.catalog-photo-dialog::backdrop {background:#101918ee;}
+.catalog-gallery {position:relative;min-width:0;margin-bottom:10px;}
+.catalog-gallery-track {display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;border-radius:13px;background:#f3f5f4;-webkit-overflow-scrolling:touch;}
+.catalog-gallery-track::-webkit-scrollbar {display:none;}
+.catalog-gallery-slide {display:block;flex:0 0 100%;width:100%;height:192px;padding:0;border:0;background:#f3f5f4;overflow:hidden;scroll-snap-align:start;cursor:zoom-in;}
+.catalog-gallery-slide img {display:block;width:100%;height:100%;object-fit:contain;transform:scale(var(--photo-zoom,1));transform-origin:var(--photo-x,50%) var(--photo-y,50%);transition:transform .35s cubic-bezier(.2,.65,.3,1);}
+.catalog-gallery-slide:focus-visible {outline:3px solid #137b60;outline-offset:-4px;}
+.catalog-real-badge {position:absolute;top:8px;left:8px;max-width:calc(100% - 16px);padding:4px 7px;border-radius:20px;background:#17392edc;color:white;font-size:10px;font-weight:700;line-height:1.2;pointer-events:none;}
+.catalog-gallery-dots,.catalog-modal-dots {display:flex;align-items:center;justify-content:center;gap:7px;min-height:18px;}
+.catalog-gallery-dots {padding-top:7px;}
+.catalog-gallery-dot {width:8px;height:8px;min-width:8px;padding:0;border:0;border-radius:50%;background:#a8bcb0;cursor:pointer;transition:background-color .2s ease,transform .2s ease;}
+.catalog-gallery-dot.is-active {background:#137b60;transform:scale(1.3);}
+.catalog-gallery-dot:focus-visible {outline:2px solid #137b60;outline-offset:3px;}
+.catalog-photo-dialog {position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:58px 12px 76px;border:0;background:#101918;color:white;box-sizing:border-box;overflow:hidden;opacity:0;transform:translateY(14px) scale(.97);transition:opacity .24s ease,transform .24s cubic-bezier(.2,.65,.3,1);}
+.catalog-photo-dialog.is-open {opacity:1;transform:translateY(0) scale(1);}
+.catalog-photo-dialog::backdrop {background:#10191800;transition:background-color .24s ease;}
+.catalog-photo-dialog.is-open::backdrop {background:#101918ee;}
 .catalog-photo-dialog img {display:block;width:100%;height:100%;object-fit:contain;touch-action:pinch-zoom;}
 .catalog-photo-close {position:absolute;right:max(16px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));width:44px;height:44px;border:1px solid #ffffff55;border-radius:50%;background:#20352f;color:white;font-size:30px;line-height:1;cursor:pointer;}
-.catalog-photo-caption {position:absolute;left:16px;right:16px;bottom:max(16px,env(safe-area-inset-bottom));font-size:13px;text-align:center;overflow-wrap:anywhere;}
+.catalog-photo-caption {position:absolute;left:16px;right:16px;bottom:max(37px,calc(env(safe-area-inset-bottom) + 26px));font-size:13px;text-align:center;overflow-wrap:anywhere;}
+.catalog-modal-dots {position:absolute;left:16px;right:16px;bottom:max(13px,env(safe-area-inset-bottom));}
+.catalog-modal-dot {width:6px;height:6px;border-radius:50%;background:#ffffff77;transition:background-color .2s ease,transform .2s ease;}
+.catalog-modal-dot.is-active {background:white;transform:scale(1.35);}
 .photo-placeholder {flex-direction:column;color:#52685c;font-size:13px;gap:8px;}
 .photo-placeholder span:first-child {font-size:42px;}
 .product-ref {font-size:11px;font-weight:700;color:#52685c;letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px;}
@@ -114,11 +127,12 @@ h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!impo
 @media (hover:hover) {
  .product-photo:hover img {transform:scale(var(--photo-hover,1.242));cursor:zoom-in;}
  .photo-reel figure:hover img {transform:scale(1.08);cursor:zoom-in;}
+ .catalog-gallery-slide:hover img {transform:scale(calc(var(--photo-zoom,1) * 1.04));}
 }
 .product-photo:focus-visible img {transform:scale(var(--photo-hover,1.242));}
 .product-photo:focus-visible {outline:3px solid #137b60;outline-offset:3px;}
 @media (prefers-reduced-motion:reduce) {
- .product-photo img,.photo-reel img {transition:none;}
+ .product-photo img,.photo-reel img,.catalog-gallery-slide img,.catalog-gallery-dot,.catalog-modal-dot,.catalog-photo-dialog,.catalog-photo-dialog::backdrop {transition:none;}
 }
 .photo-reel figure:focus-visible img {transform:scale(1.08);}
 /* Keep the native icon fonts intact and motion limited to the item in focus. */
@@ -191,7 +205,7 @@ button:focus-visible,a:focus-visible,.photo-reel:focus-visible,.photo-reel figur
  .hero:after {right:-210px;opacity:.4;}
  .st-key-catalog_grid {grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
  .st-key-catalog_grid [class*="st-key-card_"] {width:100%!important;max-width:100%!important;padding:9px!important;border-radius:14px!important;}
- .st-key-catalog_grid .product-photo {height:clamp(125px,41vw,185px);margin-bottom:0;}
+ .st-key-catalog_grid .catalog-gallery-slide,.st-key-catalog_grid .product-photo {height:clamp(125px,41vw,185px);margin-bottom:0;}
  .st-key-catalog_grid .product-ref {font-size:10px;line-height:1.35;min-height:27px;}
  .st-key-catalog_grid [class*="st-key-card_"] [data-testid="stPopover"] button {font-size:14px;min-height:52px;padding:3px 0;}
  .st-key-catalog_grid .product-price {font-size:20px;}

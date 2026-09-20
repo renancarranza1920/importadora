@@ -16,7 +16,7 @@ La base local está en `data/inventory.db`. Reiniciar la app no vuelve a cargar 
 
 - Mostrar un catálogo con fotografías, precios, disponibilidad y búsqueda por modelo compatible, marca o referencia.
 - Buscar nombres completos aunque el catálogo use abreviaturas: «iPhone 17 Pro Max» encuentra «iPhone 17PM». El catálogo y el inventario muestran hasta 30 artículos sin paginar; a partir de 31 usan botones para avanzar o retroceder.
-- En el celular, el catálogo usa dos tarjetas por fila. Toca una foto para verla a pantalla completa y el nombre del artículo para abrir una confirmación pequeña antes de añadirlo. El contador del pedido se actualiza sin volver al inicio del catálogo.
+- En el celular, el catálogo usa dos tarjetas por fila. Cuando un artículo tiene fotos reales, aparecen junto a la foto principal: desliza la tarjeta para verlas y usa los puntos inferiores para saber cuántas hay. Toca una foto para ampliarla con una transición suave y desliza dentro del visor para pasar a la siguiente. Toca el nombre del artículo para abrir una confirmación pequeña antes de añadirlo. El contador del pedido se actualiza sin volver al inicio del catálogo.
 - Agregar varios artículos a una venta, cambiar cantidades y confirmar el pago para descontarlos.
 - Carrito con fotos, precio unitario, subtotales y total para el cliente. Al confirmar se genera y se intenta descargar un ticket PNG para compartir; también queda disponible en la última venta y en el historial. El ticket no incluye datos de empresa, cliente ni notas internas.
 - Consultar ventas y descargar comprobantes internos en HTML, imprimibles desde el navegador.

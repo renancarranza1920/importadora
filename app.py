@@ -65,7 +65,8 @@ def load_order_views():
 
 
 @st.cache_resource(validate=lambda value: all(callable(getattr(value, method, None)) for method in
-                                             ("create_inquiry", "list_inquiries", "update_inquiry", "list_photos")))
+                                             ("create_inquiry", "list_inquiries", "update_inquiry", "list_photos",
+                                              "list_photos_for_products")))
 def database(url, production, implementation_revision):
     # Streamlit does not invalidate this resource when only inventory.py changes.
     # Include that file's revision in the cache key so new methods/tables are loaded.
@@ -73,7 +74,8 @@ def database(url, production, implementation_revision):
     from hashlib import sha256
     from pathlib import Path
     import inventory as inventory_module
-    required = ("create_inquiry", "list_inquiries", "update_inquiry", "list_photos")
+    required = ("create_inquiry", "list_inquiries", "update_inquiry", "list_photos",
+                "list_photos_for_products")
     revision = sha256(Path(inventory_module.__file__).read_bytes()).hexdigest()
     if getattr(inventory_module, "IMPLEMENTATION_REVISION", None) != revision or not all(callable(getattr(inventory_module.Inventory, name, None)) for name in required):
         inventory_module = importlib.reload(inventory_module)
@@ -207,7 +209,7 @@ def product_image(product):
     return None
 
 
-def photo_markup(product, fullscreen=False):
+def photo_markup(product):
     raw = product_image(product)
     if raw:
         mime = "image/png" if raw[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
@@ -215,30 +217,107 @@ def photo_markup(product, fullscreen=False):
         x = max(0, min(100, int(product.get("image_x", 50))))
         y = max(0, min(100, int(product.get("image_y", 50))))
         src = f'data:{mime};base64,{base64.b64encode(raw).decode()}'
-        focus = '' if fullscreen else ' tabindex="0"'
-        photo = (f'<div class="product-photo"{focus} aria-label="Foto de {escape(product["name"])}" '
+        return (f'<div class="product-photo" tabindex="0" aria-label="Foto de {escape(product["name"])}" '
                 f'style="--photo-zoom:{zoom};--photo-hover:{zoom * 1.08};--photo-x:{x}%;--photo-y:{y}%">'
                 f'<img loading="lazy" decoding="async" alt="{escape(product["name"])}" src="{src}"></div>')
-        if not fullscreen:
-            return photo
-        viewer_id = f'catalog_photo_{product["sku"]}'
-        return (f'<div class="catalog-photo-viewer" id="{escape(viewer_id)}">'
-                f'<button type="button" class="catalog-photo-open" aria-label="Ver foto de {escape(product["name"])} en pantalla completa">'
-                f'{photo}<span class="photo-open-hint">Ampliar foto</span></button>'
-                f'<dialog class="catalog-photo-dialog" aria-label="Foto de {escape(product["name"])} en pantalla completa">'
-                '<button type="button" class="catalog-photo-close" aria-label="Cerrar foto">×</button>'
-                f'<img alt="{escape(product["name"])}">'
-                f'<div class="catalog-photo-caption">{escape(product["sku"])} · {escape(product["name"])}</div></dialog></div>'
-                '<script>(() => {'
-                f'const root = document.getElementById({json.dumps(viewer_id)});'
-                'if (!root || root.dataset.ready) return; root.dataset.ready = "1";'
-                'const dialog = root.querySelector("dialog");'
-                'root.querySelector(".catalog-photo-open").addEventListener("click", () => {'
-                'dialog.querySelector("img").src = root.querySelector(".product-photo img").src; dialog.showModal(); });'
-                'root.querySelector(".catalog-photo-close").addEventListener("click", () => dialog.close());'
-                'dialog.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });'
-                '})();</script>')
     return '<div class="product-photo photo-placeholder"><span aria-hidden="true">◇</span><span>Sin foto disponible</span></div>'
+
+
+def catalog_gallery_markup(product, real_photos):
+    """A swipeable cover-and-real-photo gallery with an animated full-screen viewer."""
+    frames = []
+    cover = product_image(product)
+    if cover:
+        frames.append((cover, "Foto del catálogo", max(100, min(200, int(product.get("image_zoom", 115)))) / 100,
+                       max(0, min(100, int(product.get("image_x", 50)))),
+                       max(0, min(100, int(product.get("image_y", 50))))))
+    frames.extend((raw, f"Foto real {index}", 1, 50, 50) for index, raw in enumerate(real_photos, 1))
+    if not frames:
+        return photo_markup(product)
+    viewer_id = f'catalog_gallery_{product["sku"]}'
+    slides = []
+    dots = []
+    modal_dots = []
+    for index, (raw, label, zoom, x, y) in enumerate(frames):
+        mime = "image/png" if raw[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+        src = f'data:{mime};base64,{base64.b64encode(raw).decode()}'
+        slides.append(f'<button type="button" class="catalog-gallery-slide" data-caption="{escape(label)}" '
+                      f'aria-label="Ampliar {escape(label.lower())} de {escape(product["name"])}" '
+                      f'style="--photo-zoom:{zoom};--photo-x:{x}%;--photo-y:{y}%">'
+                      f'<img loading="lazy" decoding="async" alt="{escape(label)} · {escape(product["name"])}" src="{src}"></button>')
+        if len(frames) > 1:
+            dot = f'<button type="button" class="catalog-gallery-dot{" is-active" if index == 0 else ""}" '
+            dot += f'aria-label="Ver foto {index + 1} de {len(frames)}"'
+            dot += ' aria-current="true"' if index == 0 else ''
+            dots.append(dot + '></button>')
+            modal_dots.append(f'<span class="catalog-modal-dot{" is-active" if index == 0 else ""}"></span>')
+    indicators = (f'<div class="catalog-gallery-dots" aria-label="{len(frames)} fotos; desliza para verlas">'
+                  + ''.join(dots) + '</div>' if len(frames) > 1 else '')
+    real_badge = (f'<span class="catalog-real-badge">{len(real_photos)} {"foto real" if len(real_photos) == 1 else "fotos reales"}</span>'
+                  if real_photos else '')
+    slides_markup = ''.join(slides)
+    modal_dots_markup = ''.join(modal_dots)
+    gallery = (f'<div class="catalog-gallery" id="{escape(viewer_id)}">'
+               f'<div class="catalog-gallery-track" role="region" aria-roledescription="carrusel" '
+               f'aria-label="Fotos de {escape(product["name"])}">{slides_markup}</div>'
+               f'{real_badge}{indicators}'
+               f'<dialog class="catalog-photo-dialog" aria-label="Fotos de {escape(product["name"])} en pantalla completa">'
+               '<button type="button" class="catalog-photo-close" aria-label="Cerrar foto">×</button>'
+               f'<img class="catalog-modal-image" alt="Foto de {escape(product["name"])}">'
+               f'<div class="catalog-photo-caption"><span class="catalog-modal-caption"></span> · '
+               f'{escape(product["sku"])}<span class="catalog-modal-count"></span></div>'
+               f'<div class="catalog-modal-dots">{modal_dots_markup}</div></dialog></div>')
+    script = ('<script>(() => {'
+              f'const root = document.getElementById({json.dumps(viewer_id)});'
+              'if (!root || root.dataset.ready) return; root.dataset.ready = "1";'
+              'const track = root.querySelector(".catalog-gallery-track");'
+              'const slides = [...root.querySelectorAll(".catalog-gallery-slide")];'
+              'const dots = [...root.querySelectorAll(".catalog-gallery-dot")];'
+              'const modalDots = [...root.querySelectorAll(".catalog-modal-dot")];'
+              'const dialog = root.querySelector("dialog");'
+              'const modalImage = dialog.querySelector(".catalog-modal-image");'
+              'const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;'
+              'let current = 0, scrollFrame = 0, touchX = 0, touchY = 0, closeTimer = 0;'
+              'function mark(index) {'
+              'current = Math.max(0, Math.min(slides.length - 1, index));'
+              'dots.forEach((dot, i) => { dot.classList.toggle("is-active", i === current);'
+              'if (i === current) dot.setAttribute("aria-current", "true"); else dot.removeAttribute("aria-current"); });'
+              'modalDots.forEach((dot, i) => dot.classList.toggle("is-active", i === current));'
+              '}'
+              'function show(index) {'
+              'mark(index); modalImage.src = slides[current].querySelector("img").src;'
+              'modalImage.alt = slides[current].querySelector("img").alt;'
+              'dialog.querySelector(".catalog-modal-caption").textContent = slides[current].dataset.caption;'
+              'dialog.querySelector(".catalog-modal-count").textContent = slides.length > 1 ? ` · ${current + 1}/${slides.length}` : "";'
+              'track.scrollTo({left: track.clientWidth * current, behavior: reduced ? "auto" : "smooth"});'
+              '}'
+              'function open(index) {'
+              'clearTimeout(closeTimer); show(index); dialog.showModal();'
+              'if (reduced) dialog.classList.add("is-open");'
+              'else requestAnimationFrame(() => requestAnimationFrame(() => dialog.classList.add("is-open")));'
+              '}'
+              'function close() {'
+              'if (!dialog.open) return; dialog.classList.remove("is-open");'
+              'clearTimeout(closeTimer); closeTimer = setTimeout(() => dialog.close(), reduced ? 0 : 240);'
+              '}'
+              'slides.forEach((slide, i) => slide.addEventListener("click", () => open(i)));'
+              'dots.forEach((dot, i) => dot.addEventListener("click", () => {'
+              'mark(i); track.scrollTo({left: track.clientWidth * i, behavior: reduced ? "auto" : "smooth"}); }));'
+              'track.addEventListener("scroll", () => { if (dialog.open) return; cancelAnimationFrame(scrollFrame);'
+              'scrollFrame = requestAnimationFrame(() => mark(Math.round(track.scrollLeft / Math.max(track.clientWidth, 1)))); }, {passive: true});'
+              'dialog.querySelector(".catalog-photo-close").addEventListener("click", close);'
+              'dialog.addEventListener("click", event => { if (event.target === dialog) close(); });'
+              'dialog.addEventListener("cancel", event => { event.preventDefault(); close(); });'
+              'dialog.addEventListener("touchstart", event => { touchX = event.changedTouches[0].screenX;'
+              'touchY = event.changedTouches[0].screenY; }, {passive: true});'
+              'dialog.addEventListener("touchend", event => { const dx = event.changedTouches[0].screenX - touchX;'
+              'const dy = event.changedTouches[0].screenY - touchY;'
+              'if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.25) show(current + (dx < 0 ? 1 : -1)); }, {passive: true});'
+              'dialog.addEventListener("keydown", event => {'
+              'if (event.key === "ArrowRight" || event.key === "ArrowLeft") {'
+              'event.preventDefault(); show(current + (event.key === "ArrowRight" ? 1 : -1)); }});'
+              '})();</script>')
+    return gallery + script
 
 
 def title(kicker, heading, description=""):
@@ -404,12 +483,14 @@ def catalogue(seller, storefront=False):
         st.session_state["catalog_page"] = 1
     st.session_state["catalog_filters"] = filters
     page = st.session_state.get("catalog_page", 1)
+    visible = items[(page - 1) * PRODUCTS_PER_PAGE:page * PRODUCTS_PER_PAGE]
+    photos_by_sku = db.list_photos_for_products([p["sku"] for p in visible])
     with st.container(horizontal=True, gap="small", key="catalog_grid"):
-        for p in items[(page - 1) * PRODUCTS_PER_PAGE:page * PRODUCTS_PER_PAGE]:
+        for p in visible:
             with st.container(width=255, border=True, key=f"card_{p['sku']}"):
                 stock_class = "empty" if not p["stock"] else "low" if p["stock"] <= p["low_stock"] else ""
                 stock_text = f"{p['stock']} disponibles" if p["stock"] else "Agotado"
-                st.html(photo_markup(p, fullscreen=True) +
+                st.html(catalog_gallery_markup(p, photos_by_sku[p["sku"]]) +
                         f'<div class="product-ref">{escape(p["brand"])} / {escape(p["sku"])}</div>',
                         unsafe_allow_javascript=True)
                 item_cart = st.session_state["cart" if seller else "public_cart"]

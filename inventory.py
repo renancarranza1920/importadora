@@ -201,6 +201,19 @@ class Inventory:
             return [dict(r) for r in conn.execute(select(product_photos).where(product_photos.c.sku == sku)
                                                  .order_by(product_photos.c.position)).mappings()]
 
+    def list_photos_for_products(self, skus):
+        """Fetch the visible catalog page's real photos in one database query."""
+        grouped = {sku: [] for sku in dict.fromkeys(skus)}
+        if not grouped:
+            return grouped
+        query = (select(product_photos.c.sku, product_photos.c.image_data)
+                 .where(product_photos.c.sku.in_(list(grouped)))
+                 .order_by(product_photos.c.sku, product_photos.c.position))
+        with self.engine.connect() as conn:
+            for row in conn.execute(query).mappings():
+                grouped[row["sku"]].append(row["image_data"])
+        return grouped
+
     def save_product(self, item, expected_version=None, image=None, real_photos=None):
         values = {k: str(item.get(k, "")).strip() for k in ("sku", "name", "compatibility", "brand", "category", "notes")}
         values["sku"] = values["sku"].upper()
