@@ -1,4 +1,6 @@
 """Exercise the actual Streamlit forms on isolated disposable databases."""
+import json
+
 import pytest
 from streamlit.testing.v1 import AppTest
 
@@ -105,6 +107,7 @@ def test_inventory_adjust_and_all_private_pages(ui):
     login(app)
     navigate(app, "Inventario")
     field(app.radio, "Gestión").set_value("Reponer / ajustar").run()
+    no_errors(app.button(key="inventory_sku_choose_A06-01").click().run())
     field(app.number_input, "Unidades del movimiento").set_value(8)
     field(app.text_input, "Motivo obligatorio").set_value("Llegada de mercancía")
     app.checkbox[0].check()
@@ -149,6 +152,7 @@ def test_edit_concurrent_change_requires_reload(ui):
     login(app)
     navigate(app, "Inventario")
     field(app.radio, "Gestión").set_value("Editar artículo").run()
+    no_errors(app.button(key="inventory_sku_choose_A06-01").click().run())
     field(app.text_input, "Nombre del artículo").set_value("Cambio de nombre")
     db.adjust_stock("A06-01", 1, "Otra sesión", "other-session")
     no_errors(button(app, "Guardar cambios").click().run())
@@ -332,13 +336,33 @@ def test_private_request_alternative_and_cancel(ui):
     login(app)
     navigate(app, "Solicitudes")
     no_errors(app.button(key=f"open_inquiry_{row['id']}").click().run())
+    assert not [b for b in app.button if b.label == "Guardar ajustes y agregar alternativa"]
+    assert not any(e.label == "Producto alternativo" for e in app.selectbox)
+    no_errors(app.text_input(key=f"alternative_{row['id']}_search").set_value("iPhone 17 Pro Max").run())
+    assert app.button(key=f"alternative_{row['id']}_choose_IP17PM-01")
+    no_errors(app.button(key=f"alternative_{row['id']}_choose_IP17PM-02").click().run())
+    assert len(json.loads(db.list_inquiries()[0]["items"])) == 1
     no_errors(button(app, "Guardar ajustes y agregar alternativa").click().run())
-    import json
-    assert len(json.loads(db.list_inquiries()[0]["items"])) == 2
+    assert set(json.loads(db.list_inquiries()[0]["items"])) == {"A06-01", "IP17PM-02"}
     field(app.checkbox, "Confirmo que deseo cancelar esta solicitud.").check()
     no_errors(button(app, "Cancelar pedido").click().run())
     assert db.list_inquiries()[0]["status"] == "cancelled"
     assert db.get_product("A06-01")["stock"] == 10
+
+
+def test_inventory_picker_searches_models_before_editing(ui):
+    app, _ = ui
+    login(app)
+    navigate(app, "Inventario")
+    app.radio(key="inventory_action").set_value("Editar artículo").run()
+    assert not [e for e in app.text_input if e.label == "Nombre del artículo"]
+    no_errors(app.text_input(key="inventory_sku_search").set_value("iPhone 17 Pro Max").run())
+    choices = [b.key for b in app.button if b.key and b.key.startswith("inventory_sku_choose_")]
+    assert choices == ["inventory_sku_choose_IP17PM-01", "inventory_sku_choose_IP17PM-02",
+                       "inventory_sku_choose_IP17PM-03"]
+    no_errors(app.button(key="inventory_sku_choose_IP17PM-03").click().run())
+    assert app.session_state["inventory_sku"] == "IP17PM-03"
+    assert field(app.text_input, "Nombre del artículo").value == "iPhone 17PM/ 18PM"
 
 
 def test_separate_storefront_needs_no_phone_or_login(ui):

@@ -14,7 +14,7 @@ import streamlit as st
 from inventory import MAX_TOTAL_CENTS
 
 WHATSAPP = "50373113611"
-API_VERSION = 2
+API_VERSION = 3
 IMPLEMENTATION_REVISION = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 STATUSES = {"pending": "Pendiente", "contacted": "Contactado", "cancelled": "Cancelado", "converted": "Venta registrada"}
 INQUIRY_FILTERS = {"pending": "Nuevas", "contacted": "Contactadas", "converted": "Con venta",
@@ -221,7 +221,7 @@ def inquiry_inbox(rows):
         st.caption(f"Página {page} de {pages}")
 
 
-def inquiries_page(db, summary, sale_view, reel=None):
+def inquiries_page(db, summary, sale_view, reel, product_picker):
     st.title("Solicitudes")
     rows = sorted(db.list_inquiries(), key=lambda row: (row["created_at"], row["id"]), reverse=True)
     selected = st.session_state.get("inquiry_selected")
@@ -247,10 +247,10 @@ def inquiries_page(db, summary, sale_view, reel=None):
     st.caption(f"Solicitud {position + 1} de {len(queue)} de la bandeja que abriste")
     st.html(inquiry_status_markup(row["status"]))
     st.button("Actualizar disponibilidad", key="refresh_inquiry_detail")
-    inquiry_detail(db, row, summary, sale_view, reel)
+    inquiry_detail(db, row, summary, sale_view, reel, product_picker)
 
 
-def inquiry_detail(db, row, summary, sale_view, reel=None):
+def inquiry_detail(db, row, summary, sale_view, reel, product_picker):
     selected = row["id"]
     st.text(row["customer"] + (f" · {row['phone']}" if row["phone"] else ""))
     st.caption(f"Solicitud {selected[:8].upper()} · {inquiry_date(row):%d/%m/%Y %H:%M} (El Salvador)")
@@ -273,15 +273,16 @@ def inquiry_detail(db, row, summary, sale_view, reel=None):
     with st.expander("Ofrecer otro producto disponible"):
         alternatives = [p for p in db.list_products() if p["stock"] > 0 and p["sku"] not in revised]
         if alternatives:
-            sku = st.selectbox("Producto alternativo", [p["sku"] for p in alternatives],
-                               format_func=lambda value: next(f"{p['sku']} · {p['name']}" for p in alternatives if p["sku"] == value))
-            p = next(p for p in alternatives if p["sku"] == sku)
-            summary(p)
-            if st.button("Guardar ajustes y agregar alternativa", disabled=len(revised) >= 20, width="stretch"):
-                revised[sku] = dict(quantity=1, price_cents=p["price_cents"], name=p["name"])
-                db.update_inquiry(selected, row["version"], revised, row["status"])
-                st.rerun()
-            st.caption("Se agrega una unidad. Acuerda el cambio con el cliente antes de confirmar la venta.")
+            st.caption("Busca un modelo y elige su tarjeta para ver la foto, el código, el precio y las unidades disponibles.")
+            p = product_picker(alternatives, f"alternative_{selected}", "Buscar alternativa",
+                               "Elegir alternativa")
+            if p:
+                st.success(f"Elegiste {p['sku']} · {p['name']} · {money(p['price_cents'])} USD")
+                if st.button("Guardar ajustes y agregar alternativa", disabled=len(revised) >= 20, width="stretch"):
+                    revised[p["sku"]] = dict(quantity=1, price_cents=p["price_cents"], name=p["name"])
+                    db.update_inquiry(selected, row["version"], revised, row["status"])
+                    st.rerun()
+                st.caption("Se agrega una unidad. Acuerda el cambio con el cliente antes de confirmar la venta.")
         else:
             st.info("No hay otros productos disponibles.")
     phone = ''.join(c for c in row["phone"] if c.isdigit())

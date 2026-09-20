@@ -54,9 +54,11 @@ def load_order_views():
     revision = hashlib.sha256(Path(order_views.__file__).read_bytes()).hexdigest()
     if getattr(order_views, "IMPLEMENTATION_REVISION", None) != revision:
         order_views = importlib.reload(order_views)
-    if (getattr(order_views, "API_VERSION", None) != 2
+    if (getattr(order_views, "API_VERSION", None) != 3
             or not callable(getattr(order_views, "public_order", None))
-            or "nav_key" not in inspect.signature(order_views.public_order).parameters):
+            or not callable(getattr(order_views, "inquiries_page", None))
+            or "nav_key" not in inspect.signature(order_views.public_order).parameters
+            or "product_picker" not in inspect.signature(order_views.inquiries_page).parameters):
         raise InventoryError("Actualización incompleta: reemplaza order_views.py junto con app.py, inventory.py y styles.css y reinicia Streamlit.")
     return order_views
 
@@ -204,6 +206,51 @@ def product_summary(p):
             f'<div class="cart-unit">{money(p["price_cents"])}</div>'
             f'<span class="stock {stock_class}">{stock_text}</span>'
             f'<p class="muted">{"Activo" if p["active"] else "Archivado"}</p></div></div>')
+
+
+def select_product(key, sku):
+    st.session_state[key] = sku
+
+
+def product_picker(items, key, label, choose_label="Seleccionar artículo"):
+    """Choose a product from searchable photo cards; no item is chosen implicitly."""
+    available = {p["sku"]: p for p in items}
+    if st.session_state.get(key) not in available:
+        st.session_state.pop(key, None)
+    if not items:
+        st.info("No hay artículos disponibles para elegir.")
+        return None
+    search = st.text_input(label, key=f"{key}_search",
+                           placeholder="Busca por modelo, compatibilidad o referencia",
+                           icon=":material/search:")
+    filtered = [p for p in items if product_matches(p, search)]
+    st.caption(f"{len(filtered)} de {len(items)} artículos para elegir")
+    if not filtered:
+        st.info("No encontramos artículos para esa búsqueda. Prueba otro modelo o referencia.")
+    pages = max(1, (len(filtered) + PRODUCTS_PER_PAGE - 1) // PRODUCTS_PER_PAGE)
+    page_key = f"{key}_page"
+    if st.session_state.get(f"{key}_last_search") != search or st.session_state.get(page_key, 1) > pages:
+        st.session_state[page_key] = 1
+    st.session_state[f"{key}_last_search"] = search
+    page = st.session_state.get(page_key, 1)
+    with st.container(horizontal=True, key=f"{key}_grid"):
+        for p in filtered[(page - 1) * PRODUCTS_PER_PAGE:page * PRODUCTS_PER_PAGE]:
+            selected = st.session_state.get(key) == p["sku"]
+            stock_class = "empty" if not p["active"] or not p["stock"] else "low" if p["stock"] <= p["low_stock"] else ""
+            stock_text = "Archivado" if not p["active"] else f'{p["stock"]} disponibles' if p["stock"] else "Agotado"
+            with st.container(border=True, width=220, key=f"{key}_card_{p['sku']}"):
+                st.html(photo_markup(p) +
+                        f'<div class="product-ref">{escape(p["sku"])} · {escape(p["brand"])}</div>'
+                        f'<div class="product-title">{escape(p["name"])}</div>'
+                        f'<div class="picker-compatibility">{escape(p["compatibility"] or "Compatibilidad no especificada")}</div>'
+                        f'<div class="product-foot"><span class="product-price">{money(p["price_cents"])} USD</span>'
+                        f'<span class="stock {stock_class}">{stock_text}</span></div>'
+                        + ('<span class="picker-selected">Artículo elegido</span>' if selected else ''))
+                st.button("Elegido" if selected else choose_label, key=f"{key}_choose_{p['sku']}",
+                          on_click=select_product, args=(key, p["sku"]),
+                          type="primary" if selected else "secondary", width="stretch")
+    page_buttons(page_key, page, pages)
+    return available.get(st.session_state.get(key))
 
 
 def photo_reel(photos):
@@ -555,10 +602,13 @@ def inventory_page():
         st.caption(f"{len(filtered)} de {len(items)} referencias")
         st.download_button("Exportar inventario CSV", csv_export(rows), "inventario.csv", "text/csv")
         return
-    sku = st.selectbox("Selecciona el artículo", [p["sku"] for p in items], key="inventory_sku",
-                       format_func=lambda x: next(f"{p['sku']} · {p['name']}" for p in items if p["sku"] == x))
-    if not sku:
+    with st.expander("Elegir artículo", expanded=not bool(st.session_state.get("inventory_sku"))):
+        p = product_picker(items, "inventory_sku", "Buscar artículo para gestionar")
+    if p is None:
+        st.info("Elige una tarjeta para continuar.")
         return
+    sku = p["sku"]
+    st.subheader("Artículo seleccionado")
     p = db.get_product(sku)
     product_summary(p)
     if action == "Editar artículo":
@@ -767,7 +817,7 @@ try:
     elif current == "Mi pedido" and PUBLIC and not seller:
         order_pages.public_order(db, product_summary, photo_reel)
     elif current == "Solicitudes" and seller:
-        order_pages.inquiries_page(db, product_summary, sale_view, photo_reel)
+        order_pages.inquiries_page(db, product_summary, sale_view, photo_reel, product_picker)
     elif seller:
         {"Nueva venta": cart_page, "Inventario": inventory_page, "Ventas": sales_page,
          "Movimientos": movements_page, "Ayuda y respaldo": help_page}[current]()

@@ -21,7 +21,8 @@ def test_stale_order_view_is_reloaded_before_keyword_call(monkeypatch):
     monkeypatch.setattr(order_views, "IMPLEMENTATION_REVISION", "old-deployment")
     refreshed = loader()()
     assert "nav_key" in inspect.signature(refreshed.public_order).parameters
-    assert refreshed.API_VERSION == 2
+    assert "product_picker" in inspect.signature(refreshed.inquiries_page).parameters
+    assert refreshed.API_VERSION == 3
 
 
 def test_partial_deploy_reports_required_files(monkeypatch):

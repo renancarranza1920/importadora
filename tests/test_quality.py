@@ -66,6 +66,9 @@ def test_adjustment_keeps_invalid_input_and_resets_after_success(ui):
     login(app)
     navigate(app, "Inventario")
     app.radio(key="inventory_action").set_value("Reponer / ajustar").run()
+    assert not any(e.label == "Selecciona el artículo" for e in app.selectbox)
+    assert not [e for e in app.number_input if e.label == "Unidades del movimiento"]
+    app.button(key="inventory_sku_choose_A06-01").click().run()
     field(app.number_input, "Unidades del movimiento").set_value(8)
     field(app.text_input, "Motivo obligatorio").set_value("Reposición de prueba")
     no_errors(button(app, "Registrar movimiento").click().run())
@@ -77,7 +80,7 @@ def test_adjustment_keeps_invalid_input_and_resets_after_success(ui):
     assert field(app.number_input, "Unidades del movimiento").value == 1
     assert not app.checkbox[0].value
     field(app.number_input, "Unidades del movimiento").set_value(9)
-    app.selectbox(key="inventory_sku").set_value("A06-02").run()
+    app.button(key="inventory_sku_choose_A06-02").click().run()
     assert field(app.number_input, "Unidades del movimiento").value == 1
 
 
