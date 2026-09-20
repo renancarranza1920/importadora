@@ -16,12 +16,13 @@ La base local está en `data/inventory.db`. Reiniciar la app no vuelve a cargar 
 
 - Mostrar un catálogo con fotografías, precios, disponibilidad y búsqueda por modelo compatible, marca o referencia.
 - Buscar nombres completos aunque el catálogo use abreviaturas: «iPhone 17 Pro Max» encuentra «iPhone 17PM». El catálogo y el inventario muestran hasta 30 artículos sin paginar; a partir de 31 usan botones para avanzar o retroceder.
+- En el celular, el catálogo usa dos tarjetas por fila. Toca una foto para verla a pantalla completa y el nombre del artículo para abrir una confirmación pequeña antes de añadirlo. El contador del pedido se actualiza sin volver al inicio del catálogo.
 - Agregar varios artículos a una venta, cambiar cantidades y confirmar el pago para descontarlos.
 - Carrito con fotos, precio unitario, subtotales y total para el cliente. Al confirmar se genera y se intenta descargar un ticket PNG para compartir; también queda disponible en la última venta y en el historial. El ticket no incluye datos de empresa, cliente ni notas internas.
 - Consultar ventas y descargar comprobantes internos en HTML, imprimibles desde el navegador.
 - Anular una venta completa y devolver sus unidades al inventario una sola vez.
 - Crear productos de cualquier categoría, añadir fotos, editar precios y archivar referencias.
-- Administrar existencias desde tarjetas con foto y accesos directos a editar o reponer. En los formularios también puedes buscar y elegir el artículo por foto, código, precio y existencias. Al crear o editar, previsualiza la foto principal y añade hasta ocho fotos reales (5 MB por foto); puedes quitar fotos seleccionadas antes de guardar. El carrito muestra un carrete de fotos reales, con zoom al pasar el mouse y desplazamiento horizontal en el celular.
+- Administrar existencias desde tarjetas con foto y accesos directos a editar o reponer. En los formularios también puedes buscar y elegir el artículo por foto, código, precio y existencias. Al crear o editar, previsualiza la foto principal y añade hasta ocho fotos reales (5 MB por foto), desde archivos o tomándolas con la cámara del celular; puedes quitar fotos seleccionadas antes de guardar. El carrito muestra un carrete de fotos reales, con zoom al pasar el mouse y desplazamiento horizontal en el celular.
 - Registrar entradas o salidas justificadas y consultar su historial.
 - Exportar inventario, ventas y movimientos en CSV, y un respaldo completo en JSON.
 

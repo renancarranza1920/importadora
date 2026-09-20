@@ -110,7 +110,7 @@ def test_public_removal_immediately_updates_navigation(ui):
     app.radio(key="public_nav").set_value("Mi pedido").run()
     no_errors(button(app, "Quitar del pedido").click().run())
     assert app.session_state["public_cart"] == {}
-    assert app.radio(key="public_nav").options == ["Catálogo", "Mi pedido (0)"]
+    assert app.radio(key="public_nav").options == ["Catálogo", "Mi pedido"]
     assert not any(b.label == "Pedir por WhatsApp" for b in app.button)
     assert button(app, "Ver catálogo")
 

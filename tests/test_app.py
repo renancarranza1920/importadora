@@ -67,6 +67,17 @@ def test_public_catalog_login_required_and_compatibility_search(ui):
     assert not db.list_sales()
 
 
+def test_catalog_add_updates_in_place_and_keeps_confirmation_closed(ui):
+    app, _ = ui
+    app.button(key="request_add_A06-01").click().run()
+    assert app.session_state["public_cart"]["A06-01"]["quantity"] == 1
+    assert app.session_state["offer_A06-01"] is False
+    assert button(app, "Revisar mi pedido · 1 unidad")
+    app.button(key="request_add_A06-01").click().run()
+    assert app.session_state["public_cart"]["A06-01"]["quantity"] == 2
+    assert button(app, "Revisar mi pedido · 2 unidades")
+
+
 def test_real_sale_form_confirmation_and_logout(ui):
     app, db = ui
     login(app)
@@ -286,6 +297,20 @@ def test_edit_image_zoom_and_reopen(ui):
     assert field(app.slider, "Centro horizontal (%)").value == 25
 
 
+def test_staged_camera_photo_is_saved_with_product(ui):
+    from test_photos import photo
+    app, db = ui
+    p = db.get_product("A06-01")
+    login(app)
+    navigate(app, "Inventario")
+    app.radio(key="inventory_action").set_value("Editar artículo").run()
+    app.button(key="inventory_sku_choose_A06-01").click().run()
+    app.session_state[f"camera_photos_A06-01_{p['version']}"] = [photo()]
+    no_errors(app.run())
+    no_errors(button(app, "Guardar cambios").click().run())
+    assert len(db.list_photos("A06-01")) == 1
+
+
 def test_public_request_shortage_admin_review_and_sale(ui):
     app, db = ui
     assert "Solicitudes" not in app.radio(key="nav").options
@@ -370,7 +395,7 @@ def test_separate_storefront_needs_no_phone_or_login(ui):
     app.query_params["vista"] = "pedidos"
     no_errors(app.run())
     assert not app.sidebar.radio
-    assert app.radio(key="public_nav").options == ["Catálogo", "Mi pedido (0)"]
+    assert app.radio(key="public_nav").options == ["Catálogo", "Mi pedido"]
     assert not any(e.label == "Acceso administrador" for e in app.button)
     app.button(key="request_add_A06-01").click().run()
     app.radio(key="public_nav").set_value("Mi pedido").run()

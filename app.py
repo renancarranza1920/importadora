@@ -5,6 +5,7 @@ import csv
 import html
 import hashlib
 import io
+import json
 import logging
 import os
 import re
@@ -150,6 +151,34 @@ def new_cart_key():
     st.session_state["sale_request"] = str(uuid4())
 
 
+def add_catalog_item(sku, seller):
+    if seller and not auth.authenticated(ENCODED):
+        st.session_state["catalog_notice"] = "Tu sesión terminó. Vuelve a entrar antes de registrar una venta."
+        return
+    p = db.get_product(sku)
+    cart_key = "cart" if seller else "public_cart"
+    cart = st.session_state[cart_key]
+    current = cart.get(sku, {}).get("quantity", 0)
+    limit = p["stock"] if seller else min(p["stock"], 10000)
+    if not p["active"] or current >= limit:
+        st.session_state["catalog_notice"] = f"{sku}: ya no hay unidades disponibles. Actualiza el catálogo."
+        return
+    if not seller and sku not in cart and len(cart) >= 20:
+        st.session_state["catalog_notice"] = "Puedes incluir hasta 20 referencias por pedido."
+        return
+    cart[sku] = (dict(quantity=current + 1,
+                      price_cents=cart.get(sku, {}).get("price_cents", p["price_cents"])) if seller else
+                 dict(quantity=current + 1, price_cents=cart.get(sku, {}).get("price_cents", p["price_cents"]),
+                      name=p["name"]))
+    st.session_state.pop(f"{'qty' if seller else 'request_qty_public'}_{sku}", None)
+    if seller:
+        new_cart_key()
+    else:
+        st.session_state["public_request"] = str(uuid4())
+    st.session_state["catalog_notice"] = f"{sku} añadido · {current + 1} en tu {'carrito' if seller else 'pedido'}."
+    st.session_state[f"offer_{sku}"] = False
+
+
 def csv_export(rows):
     if not rows:
         return "".encode("utf-8-sig")
@@ -178,16 +207,37 @@ def product_image(product):
     return None
 
 
-def photo_markup(product):
+def photo_markup(product, fullscreen=False):
     raw = product_image(product)
     if raw:
         mime = "image/png" if raw[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
         zoom = max(100, min(200, int(product.get("image_zoom", 115)))) / 100
         x = max(0, min(100, int(product.get("image_x", 50))))
         y = max(0, min(100, int(product.get("image_y", 50))))
-        return (f'<div class="product-photo" tabindex="0" aria-label="Ampliar foto de {escape(product["name"])}" '
+        src = f'data:{mime};base64,{base64.b64encode(raw).decode()}'
+        focus = '' if fullscreen else ' tabindex="0"'
+        photo = (f'<div class="product-photo"{focus} aria-label="Foto de {escape(product["name"])}" '
                 f'style="--photo-zoom:{zoom};--photo-hover:{zoom * 1.08};--photo-x:{x}%;--photo-y:{y}%">'
-                f'<img loading="lazy" decoding="async" alt="{escape(product["name"])}" src="data:{mime};base64,{base64.b64encode(raw).decode()}"></div>')
+                f'<img loading="lazy" decoding="async" alt="{escape(product["name"])}" src="{src}"></div>')
+        if not fullscreen:
+            return photo
+        viewer_id = f'catalog_photo_{product["sku"]}'
+        return (f'<div class="catalog-photo-viewer" id="{escape(viewer_id)}">'
+                f'<button type="button" class="catalog-photo-open" aria-label="Ver foto de {escape(product["name"])} en pantalla completa">'
+                f'{photo}<span class="photo-open-hint">Ampliar foto</span></button>'
+                f'<dialog class="catalog-photo-dialog" aria-label="Foto de {escape(product["name"])} en pantalla completa">'
+                '<button type="button" class="catalog-photo-close" aria-label="Cerrar foto">×</button>'
+                f'<img alt="{escape(product["name"])}">'
+                f'<div class="catalog-photo-caption">{escape(product["sku"])} · {escape(product["name"])}</div></dialog></div>'
+                '<script>(() => {'
+                f'const root = document.getElementById({json.dumps(viewer_id)});'
+                'if (!root || root.dataset.ready) return; root.dataset.ready = "1";'
+                'const dialog = root.querySelector("dialog");'
+                'root.querySelector(".catalog-photo-open").addEventListener("click", () => {'
+                'dialog.querySelector("img").src = root.querySelector(".product-photo img").src; dialog.showModal(); });'
+                'root.querySelector(".catalog-photo-close").addEventListener("click", () => dialog.close());'
+                'dialog.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });'
+                '})();</script>')
     return '<div class="product-photo photo-placeholder"><span aria-hidden="true">◇</span><span>Sin foto disponible</span></div>'
 
 
@@ -265,6 +315,31 @@ def open_inventory(sku, action):
     st.session_state["inventory_sku"] = sku
 
 
+def stage_camera_photo(identity, camera_key, occupied):
+    shot = st.session_state.get(camera_key)
+    staged_key = f"camera_photos_{identity}"
+    staged = st.session_state.setdefault(staged_key, [])
+    if not shot:
+        return
+    if occupied + len(staged) >= 8:
+        st.session_state[f"camera_error_{identity}"] = "Ya hay 8 fotos reales. Quita alguna antes de tomar otra."
+        return
+    try:
+        staged.append(clean_image(shot.getvalue()))
+    except InventoryError as error:
+        st.session_state[f"camera_error_{identity}"] = str(error)
+        return
+    st.session_state.pop(f"camera_error_{identity}", None)
+    st.session_state[f"camera_revision_{identity}"] = st.session_state.get(f"camera_revision_{identity}", 0) + 1
+
+
+def remove_camera_photo(identity, index):
+    staged = st.session_state.get(f"camera_photos_{identity}", [])
+    if 0 <= index < len(staged):
+        del staged[index]
+    st.session_state.pop(f"camera_error_{identity}", None)
+
+
 def login_page():
     title("Tu negocio, en orden", "Acceso a tu importadora", "Entra para registrar ventas, reponer artículos y consultar tu actividad.")
     if not ENCODED:
@@ -292,6 +367,18 @@ def catalogue(seller, storefront=False):
             '<h1>El próximo favorito<br>de tus clientes.</h1>'
             '<p>Explora los modelos, encuentra el protector ideal y consulta las unidades disponibles.</p>'
             '<span class="hero-badge">● &nbsp; Existencias actualizadas cada 30 segundos</span></div>')
+    cart = st.session_state["cart" if seller else "public_cart"]
+    count = sum(item["quantity"] for item in cart.values())
+    with st.container(key="catalog_cart_bar"):
+        if st.button(f"{'Ver carrito de venta' if seller else 'Revisar mi pedido'} · {count} {'unidad' if count == 1 else 'unidades'}",
+                     type="primary", width="stretch", icon=":material/shopping_bag:", disabled=not count):
+            if storefront:
+                st.session_state["next_public_nav"] = "Mi pedido"
+            else:
+                st.session_state["next_nav"] = "Nueva venta" if seller else "Mi pedido"
+            st.rerun()
+    if st.session_state.get("catalog_notice"):
+        st.toast(st.session_state.pop("catalog_notice"))
     st.html(f'<div class="section-line"><h2>Encuentra tu modelo</h2><span class="muted">{len(all_items)} referencias · {sum(p["stock"] for p in all_items):,} unidades disponibles</span></div>')
     search = st.text_input("Buscar por modelo o referencia", placeholder="Ej. A26, iPhone 17 Pro Max, A06-01…", key="search", icon=":material/search:")
     with (st.expander("Filtrar y ordenar") if storefront else st.container()):
@@ -322,9 +409,27 @@ def catalogue(seller, storefront=False):
             with st.container(width=255, border=True, key=f"card_{p['sku']}"):
                 stock_class = "empty" if not p["stock"] else "low" if p["stock"] <= p["low_stock"] else ""
                 stock_text = f"{p['stock']} disponibles" if p["stock"] else "Agotado"
-                st.html(photo_markup(p) + f'<div class="product-ref">{escape(p["brand"])} / {escape(p["sku"])}</div>'
-                        f'<div class="product-title">{escape(p["name"])}</div>'
-                        f'<div class="product-foot"><span class="product-price">{money(p["price_cents"])} <span class="price-currency">USD</span></span>'
+                st.html(photo_markup(p, fullscreen=True) +
+                        f'<div class="product-ref">{escape(p["brand"])} / {escape(p["sku"])}</div>',
+                        unsafe_allow_javascript=True)
+                item_cart = st.session_state["cart" if seller else "public_cart"]
+                requested = item_cart.get(p["sku"], {}).get("quantity", 0)
+                disabled = (p["stock"] <= requested or (not seller and requested >= 10000) or
+                            (not seller and p["sku"] not in item_cart and len(item_cart) >= 20))
+                with st.popover(p["name"], type="tertiary", width="stretch", wrap=True,
+                                key=f"offer_{p['sku']}", on_change="rerun"):
+                    st.caption(f"{p['sku']} · {p['name']}")
+                    st.write(f"**{money(p['price_cents'])} USD** · {stock_text}")
+                    st.caption(f"Compatible con: {p['compatibility'] or 'No especificado'}")
+                    if p["notes"]:
+                        st.caption(p["notes"])
+                    if disabled:
+                        st.caption("No quedan unidades para añadir o el pedido ya alcanzó su límite de referencias.")
+                    st.button("Sí, añadir al carrito" if seller else "Sí, añadir a mi pedido",
+                              key=f"{'add' if seller else 'request_add'}_{p['sku']}",
+                              type="primary", width="stretch", disabled=disabled,
+                              on_click=add_catalog_item, args=(p["sku"], seller))
+                st.html(f'<div class="product-foot"><span class="product-price">{money(p["price_cents"])} <span class="price-currency">USD</span></span>'
                         f'<span class="stock {stock_class}">{stock_text}</span></div>')
                 with st.expander("Ver detalles"):
                     raw = product_image(p)
@@ -334,32 +439,6 @@ def catalogue(seller, storefront=False):
                     st.caption("Una sola referencia comparte las existencias entre todos los modelos indicados.")
                     if p["notes"]:
                         st.caption(p["notes"])
-                if seller:
-                    cart = st.session_state["cart"]
-                    in_cart = cart.get(p["sku"], {}).get("quantity", 0)
-                    if st.button("Agregar a la venta" if not in_cart else f"Agregar otra · {in_cart} en carrito",
-                                 key=f"add_{p['sku']}", width="stretch", disabled=p["stock"] <= in_cart,
-                                 icon=":material/add_shopping_cart:"):
-                        if not auth.authenticated(ENCODED):
-                            st.rerun()
-                        cart[p["sku"]] = {"quantity": in_cart + 1, "price_cents": cart.get(p["sku"], {}).get("price_cents", p["price_cents"])}
-                        st.session_state.pop(f"qty_{p['sku']}", None)
-                        new_cart_key()
-                        st.toast(f"{p['sku']} agregado")
-                        st.rerun()
-                else:
-                    requested = st.session_state["public_cart"].get(p["sku"], {}).get("quantity", 0)
-                    if st.button("Agregar a mi pedido" if not requested else f"Agregar otra · {requested} en mi pedido",
-                                 key=f"request_add_{p['sku']}", width="stretch", disabled=requested >= min(p["stock"], 10000)):
-                        cart = st.session_state["public_cart"]
-                        if p["sku"] not in cart and len(cart) >= 20:
-                            st.warning("Puedes incluir hasta 20 referencias por pedido.")
-                        else:
-                            cart[p["sku"]] = dict(quantity=requested + 1, price_cents=cart.get(p["sku"], {}).get("price_cents", p["price_cents"]), name=p["name"])
-                            st.session_state.pop(f"request_qty_public_{p['sku']}", None)
-                            st.session_state["public_request"] = str(uuid4())
-                            st.toast("Producto agregado a tu pedido")
-                            st.rerun()
     page_buttons("catalog_page", page, pages)
     st.caption("Disponibilidad informativa hasta confirmar la venta. Las compatibilidades proceden del catálogo suministrado.")
 
@@ -520,9 +599,21 @@ def product_form(product=None):
                                type=["jpg", "jpeg", "png", "webp"], accept_multiple_files=True,
                                max_upload_size=5, key=f"real_{identity}")
     remaining = len(existing) - len(removed)
+    staged_key = f"camera_photos_{identity}"
+    staged = st.session_state.setdefault(staged_key, [])
+    with st.expander("Tomar foto real con la cámara del celular"):
+        st.caption("Permite el acceso a la cámara, toma la foto y toca «Usar esta foto». Puedes repetirlo hasta completar ocho.")
+        camera_key = f"camera_{identity}_{st.session_state.get(f'camera_revision_{identity}', 0)}"
+        shot = st.camera_input("Tomar foto real", key=camera_key, resolution="1080p")
+        if shot:
+            st.button("Usar esta foto", key=f"stage_{identity}",
+                      on_click=stage_camera_photo, args=(identity, camera_key, remaining + len(uploads)),
+                      width="stretch")
+    if st.session_state.get(f"camera_error_{identity}"):
+        photo_errors.append(st.session_state[f"camera_error_{identity}"])
     prepared = []
-    if remaining + len(uploads) > 8:
-        photo_errors.append(f"Hay {remaining + len(uploads)} fotos reales seleccionadas; el máximo es 8. Quita algunas para guardar.")
+    if remaining + len(uploads) + len(staged) > 8:
+        photo_errors.append(f"Hay {remaining + len(uploads) + len(staged)} fotos reales seleccionadas; el máximo es 8. Quita algunas para guardar.")
     else:
         for uploaded in uploads:
             try:
@@ -531,9 +622,14 @@ def product_form(product=None):
                 photo_errors.append(f"{uploaded.name}: {error}")
     for error in photo_errors:
         st.error(error)
-    if prepared:
-        photo_reel(prepared)
-    st.caption(f"{remaining + len(prepared)} de 8 fotos reales. Los cambios se guardan con el artículo; las fotos reales aparecen en el carrito.")
+    if prepared or staged:
+        photo_reel(prepared + staged)
+    if staged:
+        with st.container(horizontal=True):
+            for index in range(len(staged)):
+                st.button(f"Quitar foto tomada {index + 1}", key=f"drop_camera_{identity}_{index}",
+                          on_click=remove_camera_photo, args=(identity, index))
+    st.caption(f"{remaining + len(prepared) + len(staged)} de 8 fotos reales. Los cambios se guardan con el artículo; las fotos reales aparecen en el carrito.")
     with st.form(f"product_{identity}"):
         sku = st.text_input("Referencia única", value=p["sku"], disabled=bool(product), max_chars=60)
         name = st.text_input("Nombre del artículo", value=p["name"], max_chars=200)
@@ -553,7 +649,10 @@ def product_form(product=None):
                 price_cents=cents(f"{price:.2f}"), low_stock=int(low), stock=int(stock), notes=notes, active=active,
                 image_zoom=zoom, image_x=x, image_y=y),
                 expected_version=p["version"] if product else None, image=photo.getvalue() if cover else None,
-                real_photos=([r["image_data"] for r in existing if r["id"] not in removed] + [f.getvalue() for f in uploads]) if uploads or removed else None)
+                 real_photos=([r["image_data"] for r in existing if r["id"] not in removed] +
+                              [f.getvalue() for f in uploads] + staged) if uploads or removed or staged else None)
+            st.session_state.pop(staged_key, None)
+            st.session_state.pop(f"camera_error_{identity}", None)
             st.session_state.pop("editing_product", None)
             if not product:
                 st.session_state["new_product_revision"] = st.session_state.get("new_product_revision", 0) + 1
@@ -756,16 +855,14 @@ storefront = PUBLIC and (st.query_params.get("vista") == "pedidos" or not seller
 if storefront:
     st.html('<style>[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"]{display:none!important;}</style>')
     st.html(f'<div class="shop-brand">{escape(BUSINESS)}<span>CATÁLOGO</span></div>')
-    count = sum(i["quantity"] for i in st.session_state["public_cart"].values())
+    if "next_public_nav" in st.session_state:
+        st.session_state["public_nav"] = st.session_state.pop("next_public_nav")
     current = st.radio("Explorar", ["Catálogo", "Mi pedido"], key="public_nav", horizontal=True, width="stretch",
-                       format_func=lambda value: f"Mi pedido ({count})" if value == "Mi pedido" else value)
+                       format_func=lambda value: value)
     try:
         if current == "Mi pedido":
             order_pages.public_order(db, product_summary, photo_reel, nav_key="public_nav")
         else:
-            if count:
-                st.button(f"Revisar mi pedido · {count} unidades", type="primary", width="stretch",
-                          on_click=lambda: st.session_state.update(public_nav="Mi pedido"))
             catalogue(False, storefront=True)
     except InventoryError as error:
         st.error(str(error))
@@ -791,12 +888,10 @@ with st.sidebar:
     current = st.radio("Navegación", options, key="nav", label_visibility="collapsed",
                        format_func=lambda x: f"{icons[x]}  {x}")
     if not seller and PUBLIC:
-        count = sum(i["quantity"] for i in st.session_state["public_cart"].values())
-        st.button(f"Ver mi pedido · {count} unidades", on_click=lambda: st.session_state.update(nav="Mi pedido"), width="stretch", type="primary")
+        st.button("Ver mi pedido", on_click=lambda: st.session_state.update(nav="Mi pedido"), width="stretch", type="primary")
     if seller:
-        count = sum(r["quantity"] for r in st.session_state["cart"].values())
         st.divider()
-        st.write(f"**{count} unidades en tu carrito**")
+        st.write("**Carrito de venta**")
         st.caption("Sesión: Administrador")
         if st.button("Cerrar sesión", width="stretch"):
             auth.logout()
@@ -808,8 +903,6 @@ with st.sidebar:
 if st.session_state.get("flash"):
     st.success(st.session_state.pop("flash"))
 try:
-    if not seller and PUBLIC and current == "Catálogo" and st.session_state["public_cart"]:
-        st.button("Revisar mi pedido", on_click=lambda: st.session_state.update(nav="Mi pedido"), width="stretch", type="primary")
     if current == "Acceso administrador":
         login_page()
     elif current == "Catálogo" and (PUBLIC or seller):
