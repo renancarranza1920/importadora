@@ -7,6 +7,8 @@ La prueba piloto de **mariposas crema y negro** usa una sola imagen con los dos 
 - [Descargar imagen de mariposas](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/mariposas-crema-negro.png)
 - [Descargar campaña unificada: imagen, datos y texto](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/campana-mariposas-unificada.zip)
 
+La imagen unificada conserva el diseño limpio de los anuncios originales: fondo marfil, tipografía sencilla y bloques verde oscuro y beige, con crema a la izquierda y negro a la derecha.
+
 Esta pieza reúne fotografías representativas del diseño; el ajuste corresponde a cada modelo. Para el piloto, seleccionar **imagen única**, destino WhatsApp y presupuesto **total de $2**, no diario. Las cantidades son estáticas y deben actualizarse si cambia el inventario.
 
 | Paquete | Contenido | Descargar |
