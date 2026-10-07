@@ -9,4 +9,5 @@
 - El catálogo actual es mayorista, con un mínimo de tres unidades combinadas entre modelos y diseños disponibles. El catálogo minorista se incorporará cuando el propietario lo proporcione.
 - El propietario no usa Docker Compose y no recuerda el comando original de arranque. Conservar el contenedor existente para actualizaciones rápidas; inspeccionar antes de recrear.
 - Priorizar la experiencia móvil y mostrar claramente las compatibilidades reales. No ampliar compatibilidades sin confirmación del propietario.
-- El propietario aclaró que la etiqueta «iPhone 17 Pro Max / 18 Pro Max» de IP17PM-01, IP17PM-02 e IP17PM-03 viene del proveedor. No informó una prueba física; la compatibilidad conjunta sigue pendiente de verificar para publicidad.
+- El propietario aclaró que la etiqueta «iPhone 17 Pro Max / 18 Pro Max» de IP17PM-01, IP17PM-02 e IP17PM-03 viene del proveedor. No informó una prueba física; incluir estas referencias en la entrega completa como borradores, con la procedencia y el ajuste pendiente visibles. No presentarlas como compatibilidad comprobada.
+- La entrega publicitaria debe cubrir las 24 referencias: 48 imágenes (dos formatos por referencia), separadas en Samsung (36) e iPhone (12), más un paquete solo de iPhone y una lista de referencias. No confundir número de imágenes con modelos distintos de teléfono.

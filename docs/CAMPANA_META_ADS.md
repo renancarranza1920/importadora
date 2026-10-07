@@ -21,7 +21,7 @@ Fuente: `data/catalog_seed.json`. Son las cantidades y precios **iniciales del c
 
 Las existencias de una referencia compatible con varios teléfonos se comparten; no sumes 50 unidades para A16, otras 50 para A17 y otras 50 para A26. Son las mismas 50 unidades. Tampoco promociones todas las fotos de A17 como compatibles con A16/A26: A17-01 y A17-02 están declaradas solo para A17.
 
-**Antes de invertir:** confirma en la administración las existencias, precios y compatibilidad física exacta, incluyendo variantes como 4G/5G o Pro/Pro Max cuando corresponda. El catálogo no especifica todas esas variantes: no debemos inventarlas. El propietario aclaró que la etiqueta `iPhone 17 Pro Max / 18 Pro Max` procede del proveedor; no informó una prueba física de ajuste. La compatibilidad conjunta sigue pendiente de verificar, y sus tres referencias se excluyeron de los anuncios preparados. Los textos originales permanecen en la base, sin corregirlos por suposición.
+**Antes de invertir:** confirma en la administración las existencias, precios y compatibilidad física exacta, incluyendo variantes como 4G/5G o Pro/Pro Max cuando corresponda. El catálogo no especifica todas esas variantes: no debemos inventarlas. El propietario aclaró que la etiqueta `iPhone 17 Pro Max / 18 Pro Max` procede del proveedor; no informó una prueba física de ajuste. La compatibilidad conjunta sigue pendiente de verificar. Sus tres referencias están incluidas como borradores con la procedencia del proveedor y la comprobación física pendiente visibles en cada pieza. Los textos originales permanecen en la base, sin corregirlos por suposición.
 
 ## Por qué cambiar el anuncio
 
@@ -71,7 +71,7 @@ No hay datos de tus costos ni del historial de Meta para calcular rentabilidad o
 
 ## Archivos y reutilización
 
-`output/meta-ads/` contiene 21 piezas distintas en dos formatos: feed 1080×1350 e historias 1080×1920, **42 PNG**, sus documentos HTML, galería y CSV de textos/enlaces. Las fotos originales no se alteraron. Son imágenes pequeñas extraídas del PDF; una foto original de mayor resolución mejoraría su nitidez al ampliar. Las historias reservan espacio superior e inferior para la interfaz; revisa las vistas previas de cada ubicación en Meta antes de publicar.
+`output/meta-ads/` contiene las 24 referencias en dos formatos: feed 1080×1350 e historias 1080×1920, **48 PNG**, sus documentos HTML, galería y CSV de textos/enlaces. Hay 36 imágenes en Samsung y 12 en iPhone; son diseños/referencias en dos tamaños, no 48 teléfonos distintos. El ZIP completo incluye `REFERENCIAS.csv` para comprobar los archivos de las 24 referencias. En `descargas/` hay un ZIP completo y otro exclusivo de iPhone. Las fotos originales no se alteraron. Son imágenes pequeñas extraídas del PDF; una foto original de mayor resolución mejoraría su nitidez al ampliar. Las historias reservan espacio superior e inferior para la interfaz; revisa las vistas previas de cada ubicación en Meta antes de publicar.
 
 Para regenerar documentos y textos:
 
