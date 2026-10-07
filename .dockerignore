@@ -15,5 +15,7 @@ data/*.hash
 backups
 output
 descargas
+assets/products_hd
+data/campaign_stock.json
 tmp
 *.log

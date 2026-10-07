@@ -1,0 +1,103 @@
+{
+  "captured_date": "2026-10-06",
+  "timezone": "America/El_Salvador",
+  "source": "Consulta de Oracle compartida por el propietario",
+  "products": [
+    {
+      "sku": "A06-01",
+      "stock": 3
+    },
+    {
+      "sku": "A06-02",
+      "stock": 3
+    },
+    {
+      "sku": "A06-03",
+      "stock": 45
+    },
+    {
+      "sku": "A13-01",
+      "stock": 26
+    },
+    {
+      "sku": "A13-02",
+      "stock": 20
+    },
+    {
+      "sku": "A15-01",
+      "stock": 25
+    },
+    {
+      "sku": "A15-02",
+      "stock": 20
+    },
+    {
+      "sku": "A17-01",
+      "stock": 10
+    },
+    {
+      "sku": "A17-02",
+      "stock": 8
+    },
+    {
+      "sku": "A17-03",
+      "stock": 13
+    },
+    {
+      "sku": "A17-04",
+      "stock": 6
+    },
+    {
+      "sku": "A17-05",
+      "stock": 8
+    },
+    {
+      "sku": "A17-06",
+      "stock": 7
+    },
+    {
+      "sku": "A36-01",
+      "stock": 5
+    },
+    {
+      "sku": "A36-02",
+      "stock": 5
+    },
+    {
+      "sku": "IP14-01",
+      "stock": 5
+    },
+    {
+      "sku": "IP14-02",
+      "stock": 5
+    },
+    {
+      "sku": "IP17PM-01",
+      "stock": 8
+    },
+    {
+      "sku": "IP17PM-02",
+      "stock": 8
+    },
+    {
+      "sku": "IP17PM-03",
+      "stock": 18
+    },
+    {
+      "sku": "IPX-01",
+      "stock": 10
+    },
+    {
+      "sku": "N10-01",
+      "stock": 5
+    },
+    {
+      "sku": "N20-01",
+      "stock": 4
+    },
+    {
+      "sku": "S22-01",
+      "stock": 3
+    }
+  ]
+}

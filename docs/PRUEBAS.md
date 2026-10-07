@@ -1,5 +1,14 @@
 # Verificación de IMPORTADORA
 
+## Anuncios con existencias de Oracle y fotografías mejoradas — 6 de octubre de 2026
+
+- **6 pruebas de campaña aprobadas**: cobertura de las 24 referencias, cantidades y fecha en los 48 documentos, identificación del proveedor y rechazo de consultas incompletas, duplicadas, negativas o booleanas. La consulta reemplaza las cantidades históricas sin modificar el catálogo inicial.
+- Chromium exportó y verificó 48 JPG: 1080×1350 y 1080×1920, 36 Samsung y 12 iPhone. Cantidades visibles comparadas con el CSV; fotografías cargadas y bloques de texto dentro del lienzo. Revisión visual de A06-03, A13-01 e IP17PM-03.
+- La consulta proporcionada por el propietario suma 270 unidades; las cinco referencias prioritarias reúnen 136. Cada referencia comparte stock entre sus modelos compatibles. La fecha visible y los CSV distinguen esta instantánea del inventario que cambia con ventas.
+- 24 fotografías mejoradas digitalmente a partir de 22 fuentes distintas; los originales se conservan y el manifiesto documenta dimensiones y hashes. Las mejoras no garantizan detalles originalmente ilegibles ni verifican compatibilidad física. No se sustituyeron imágenes de la tienda.
+- Esta entrega no modifica código de la web, ventas ni base de producción. Se reutiliza la validación funcional anterior; las nuevas comprobaciones se concentran en generación y entrega de anuncios.
+- Cuatro ZIP de anuncios comprobados: cantidades, dimensiones, fotos compartidas y documentos sin datos incrustados duplicados. Cinco checksums correctos; ZIP del proyecto con 102 archivos y sin bases ni secretos. Exportador de existencias verificado en SQLite temporal: incluye activos con cero unidades, excluye inactivos y no modifica los datos; no se probó una conexión directa a Oracle.
+
 ## Tienda móvil, consultas fijas y campaña por referencia — 6 de octubre de 2026
 
 - **80 pruebas aprobadas** con Python 3.12. Se incorporaron regresiones del filtro exacto de teléfono, enlace publicitario por referencia, mínimo mayorista y respuestas fijas basadas en disponibilidad. Las pruebas de inventario y ventas continúan usando bases temporales.

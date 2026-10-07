@@ -1,6 +1,22 @@
 # Protectores mayoristas: campaña por modelo
 
-## Qué dicen los datos disponibles
+## Inventario para esta entrega: 06/10/2026
+
+Fuente: consulta de Oracle compartida por el propietario, guardada en `data/campaign_stock.json`. Quedan **270 unidades en 24 referencias**. Cada pieza muestra la cantidad por referencia y la fecha; una referencia compatible con varios teléfonos comparte esas unidades. Los dos tamaños de un anuncio tampoco representan existencias adicionales.
+
+| Prioridad | Referencia | Unidades restantes | Precio del catálogo |
+| --- | --- | ---: | ---: |
+| 1 | A06-03 | 45 | $3.50 |
+| 2 | A13-01 | 26 | $2.00 |
+| 3 | A15-01 | 25 | $2.00 |
+| 4 | A13-02 | 20 | $2.00 |
+| 5 | A15-02 | 20 | $2.00 |
+
+Estas cinco referencias reúnen **136 unidades, el 50.4 % del inventario consultado**. El ZIP prioritario contiene sus diez imágenes. La campaña inicial de tres diseños (A06-03, A13-01, A15-01) reúne 96 unidades. Las familias A06, A13 y A15 completas suman 142 unidades; no confundir ese total con el de las referencias seleccionadas.
+
+`PRIORIDAD-STOCK.csv` ordena las 24 referencias por cantidad. Los precios y compatibilidades proceden del catálogo; no se consultaron precios actuales en Oracle. Las cantidades impresas son estáticas: revisar y regenerar después de ventas o ajustes, y pausar referencias agotadas.
+
+## Datos históricos del catálogo inicial
 
 Fuente: `data/catalog_seed.json`. Son las cantidades y precios **iniciales del catálogo**, no una lectura de tu inventario actual en Oracle. Hay 24 referencias, 360 unidades y **$902.50 de valor a precio de venta**. Ese importe no es inversión, costo de compra ni ganancia. Los precios van de $2.00 a $3.50 por unidad.
 
@@ -33,15 +49,15 @@ Para referencias compartidas, muestra únicamente el pequeño grupo compatible e
 
 ## Primera prueba de venta
 
-1. Empieza con A06, A13 y A15: reúnen 170 unidades, el 47.2 % del stock inicial. Usa A06-03 como pieza A06 de $3.50 y prueba otro diseño A06 de $3.00 como variante; no pongas $3.00 sobre la foto A06-03. Las fotos de A13/A15 tienen precio de $2.00.
+1. Empieza con A06-03, A13-01 y A15-01: reúnen 96 unidades actuales. Para ampliar, prueba A13-02 y A15-02: las cinco referencias suman 136 unidades. Usa $3.50 sobre A06-03 y $2.00 sobre A13/A15; no pongas el precio de otro diseño sobre una foto. A06-01 y A06-02 solo tienen tres unidades cada una, así que no son la prioridad de esta campaña.
 2. Usa el objetivo/configuración de Meta que permita conversaciones en WhatsApp, si está disponible en tu cuenta. Envía cada anuncio al chat del negocio o al enlace del catálogo filtrado de esa referencia. Las piezas y textos sirven para cualquiera de esos destinos; compara resultados sin mezclar ambos destinos en la misma prueba.
 3. La cobertura confirmada es todo el país. El envío económico llega a puntos específicos y su costo depende del total de compra; el personalizado a domicilio cuesta $5. No se proporcionó una tabla de tarifas económicas ni plazos: confírmalos en el chat. El interés en teléfonos de una marca no garantiza que alguien posea un modelo concreto; no dependas de una supuesta segmentación por modelo exacto.
-4. Con presupuesto pequeño, prueba un grupo de modelo a la vez, con una o dos variantes. Si el presupuesto permite compararlos, asigna condiciones y gasto similares a los tres grupos. No lances 21 grupos simultáneos: dispersarías la prueba. Fija antes el gasto máximo; el presupuesto y margen no fueron suministrados, por lo que no hay aquí una cifra de inversión recomendada.
+4. Con presupuesto pequeño, prueba un grupo de modelo a la vez, con una o dos variantes. Si el presupuesto permite compararlos, asigna condiciones y gasto similares a los tres grupos. No lances 24 grupos simultáneos: dispersarías la prueba. Fija antes el gasto máximo; el presupuesto y margen no fueron suministrados, por lo que no hay aquí una cifra de inversión recomendada.
 5. Registra conversaciones calificadas, pedidos y ventas pagadas por referencia. Tras la primera revisión, conserva las piezas con ventas y margen, corrige aquellas que atraigan consultas de modelos incorrectos y pausa los artículos agotados. No mantengas anuncios solo por conseguir clics baratos.
 
 Ejemplo de texto listo para A06-03:
 
-> Protector de corazones SOLO para Galaxy A06. Referencia A06-03: $3.50 por unidad. Venta mayorista desde 3 unidades combinadas. Somos tienda en línea, sin local físico. Envíos a todo el país: económico a puntos específicos con costo según el total de tu compra, o personalizado a domicilio por $5. Escríbenos: «Quiero A06-03, mi teléfono es Galaxy A06 y necesito ___ unidades». Confirmamos disponibilidad y total con envío antes de pagar.
+> Protector de corazones SOLO para Galaxy A06. Referencia A06-03: $3.50 por unidad. Quedan 45 unidades de esta referencia al 06/10/2026. Venta mayorista desde 3 unidades combinadas. Somos tienda en línea, sin local físico. Envíos a todo el país: económico a puntos específicos con costo según el total de tu compra, o personalizado a domicilio por $5. Escríbenos: «Quiero A06-03, mi teléfono es Galaxy A06 y necesito ___ unidades». Confirmamos disponibilidad y total con envío antes de pagar.
 
 La foto real A06-03 muestra corazones; otros diseños usan el texto genérico del CSV para no atribuir características que no se han verificado. No se anunció un catálogo minorista inexistente: se ofrece consultarlo por WhatsApp hasta que proporciones ese catálogo.
 
@@ -71,15 +87,40 @@ No hay datos de tus costos ni del historial de Meta para calcular rentabilidad o
 
 ## Archivos y reutilización
 
-`output/meta-ads/` contiene las 24 referencias en dos formatos: feed 1080×1350 e historias 1080×1920, **48 PNG**, sus documentos HTML, galería y CSV de textos/enlaces. Hay 36 imágenes en Samsung y 12 en iPhone; son diseños/referencias en dos tamaños, no 48 teléfonos distintos. El ZIP completo incluye `REFERENCIAS.csv` para comprobar los archivos de las 24 referencias. En `descargas/` hay un ZIP completo y otro exclusivo de iPhone. Las fotos originales no se alteraron. Son imágenes pequeñas extraídas del PDF; una foto original de mayor resolución mejoraría su nitidez al ampliar. Las historias reservan espacio superior e inferior para la interfaz; revisa las vistas previas de cada ubicación en Meta antes de publicar.
+`descargas/` incluye los ZIP completo (48 imágenes), solo iPhone (12), primera campaña (6), stock prioritario (10) y proyecto. Publicación 1080×1350 e historia 1080×1920, JPG de alta calidad (95 %). Samsung tiene 18 referencias (36 imágenes); iPhone seis (12). Cada paquete incluye `REFERENCIAS.csv`, `PRIORIDAD-STOCK.csv`, textos, consulta fechada, galería y HTML editable. Las historias reservan espacio arriba y abajo para la interfaz; revisar las vistas previas de cada ubicación en Meta.
 
-Para regenerar documentos y textos:
+Las fotos originales pequeñas del proveedor se conservan en `assets/products/`. Las mejoras digitales están en `assets/products_hd/`, separadas de las fotografías que usa la tienda. Mejoran la nitidez pero no recuperan con certeza letras o detalles originalmente ilegibles. El manifiesto de fotografías documenta la procedencia; disponer de las fotos originales en alta resolución permitiría conservar esos detalles con mayor fidelidad.
+
+Para obtener una consulta nueva sin mostrar credenciales ni modificar Oracle, desde el checkout del servidor:
 
 ```bash
 cd ~/importadora
+stock_export="$(mktemp)"
+if docker exec -i importadora python < scripts/export_campaign_stock.py > "$stock_export"; then
+    mv "$stock_export" data/campaign_stock.json
+else
+    rm -f "$stock_export"
+fi
+```
+
+El script consulta únicamente referencias activas y cantidades. La generación comprueba que la consulta cubra el catálogo; rechaza datos incompletos, negativos o duplicados en vez de completar con cantidades antiguas. El archivo de consulta de este repositorio es una instantánea pública para anuncios; no restaura ni modifica el inventario de la tienda.
+
+En una máquina de desarrollo con las dependencias del proyecto:
+
+```bash
 python scripts/preparar_anuncios.py --web-url https://TU_DOMINIO
 ```
 
-Sustituye `TU_DOMINIO` por la URL HTTPS real de Oracle. Sin ese parámetro, los enlaces son relativos. Un ejemplo será `/?vista=pedidos&ref=A06-03&utm_source=meta...`; el filtro abre esa referencia, y el cliente puede restablecerlo. El archivo fuente por defecto es el catálogo inicial. `--catalog` permite usar otro JSON con la misma estructura (`products`, referencias, compatibilidad, precio en centavos, stock y `image_path` dentro de `assets`).
+Sustituye `TU_DOMINIO` por la URL HTTPS real. Sin ese parámetro, los enlaces son relativos. El filtro por referencia permite abrir la pieza correspondiente; el cliente puede restablecerlo. `--stock-file` admite otra consulta fechada; `--catalog` permite un catálogo actualizado con la misma estructura. `--original-photos` usa los originales del proveedor.
 
-El script estándar genera HTML/CSV; los PNG de esta entrega se exportaron con Chromium. Para producir nuevas imágenes, renderiza esos documentos en un navegador a las dimensiones indicadas. No es necesario instalar herramientas de publicidad en el contenedor de la tienda.
+Para exportar las imágenes, instala Playwright en la máquina de exportación (no es necesario en el contenedor de la tienda):
+
+```bash
+python -m pip install playwright
+python -m playwright install chromium
+python scripts/render_anuncios.py
+python scripts/package_release.py
+python scripts/package_ads.py
+```
+
+Si Chromium ya está instalado, usa `python scripts/render_anuncios.py --chromium /usr/bin/chromium`. El generador produce HTML/CSV; el renderizador verifica cantidades y textos dentro del lienzo al exportar. El empaquetador incluye cada foto una sola vez por referencia para mantener los ZIP descargables desde GitHub y actualiza los checksums. Publicar cambios de existencias para anuncios no requiere reiniciar la web ni PostgreSQL.

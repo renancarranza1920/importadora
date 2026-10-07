@@ -1,0 +1,366 @@
+{
+  "method": "Optimización digital con image_gen a partir de las fotos originales del proveedor",
+  "limitations": "Las mejoras no recuperan con certeza detalles originalmente ilegibles; no prueban compatibilidad física.",
+  "photos": [
+    {
+      "sku": "A06-01",
+      "original": "assets/products/A06-01.png",
+      "improved": "assets/products_hd/A06-01.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "b162b31d9f907a7dc3898cd139c99a348dca42f4ac1d472f02b3d4e3db08d9e9",
+      "sha256_improved": "96aeffa68eb363b83154ae1c3f078ffb5328e9ea60462c2dc054a209ba54b160"
+    },
+    {
+      "sku": "A06-02",
+      "original": "assets/products/A06-02.png",
+      "improved": "assets/products_hd/A06-02.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "d6c757d7a585578a22e9cd7740d4e49d516c6dffcc768864fc3e4bfc863f97ba",
+      "sha256_improved": "73f89841262206f89ce10df18a2bccda69eef194d41bf2534037b58d50cb7010"
+    },
+    {
+      "sku": "A06-03",
+      "original": "assets/products/A06-03.png",
+      "improved": "assets/products_hd/A06-03.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "d95ad0aff6198754114080ee25606d30ce3ed8e88f5a1969528cc1976efb2435",
+      "sha256_improved": "1fd0eaa4a8dbe48ed841c57095a493c156700e66779c96c64129d11a09499e94"
+    },
+    {
+      "sku": "A13-01",
+      "original": "assets/products/A13-01.png",
+      "improved": "assets/products_hd/A13-01.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "f140224fcc49d8f89c8694e6387bba0a46a0bc6f1b27a7adff6491d64d81cab6",
+      "sha256_improved": "c647498218ee25c3b921e21a5a46c758fe2e0b35d7c66b8fab0badd97c7dd84f"
+    },
+    {
+      "sku": "A13-02",
+      "original": "assets/products/A13-02.png",
+      "improved": "assets/products_hd/A13-02.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "ead45d121340190e3d614b49705efee4018e55ccc5b2ee0c10146db2a6a9e223",
+      "sha256_improved": "16320c75bc472ba261d8258643aa12710561ea0c13181a2713c24e83711c245e"
+    },
+    {
+      "sku": "A15-01",
+      "original": "assets/products/A15-01.png",
+      "improved": "assets/products_hd/A15-01.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "f140224fcc49d8f89c8694e6387bba0a46a0bc6f1b27a7adff6491d64d81cab6",
+      "sha256_improved": "c647498218ee25c3b921e21a5a46c758fe2e0b35d7c66b8fab0badd97c7dd84f"
+    },
+    {
+      "sku": "A15-02",
+      "original": "assets/products/A15-02.png",
+      "improved": "assets/products_hd/A15-02.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "ead45d121340190e3d614b49705efee4018e55ccc5b2ee0c10146db2a6a9e223",
+      "sha256_improved": "16320c75bc472ba261d8258643aa12710561ea0c13181a2713c24e83711c245e"
+    },
+    {
+      "sku": "A17-01",
+      "original": "assets/products/A17-01.png",
+      "improved": "assets/products_hd/A17-01.png",
+      "original_pixels": [
+        192,
+        192
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "907fb13f425cdbfb8022b71ed9b28bcd595f156000e7006c6eeaec781cf3ed33",
+      "sha256_improved": "47404221331f45db4eb1582c6de3abf325c126c4681d8963ad50397fc0f7b6c4"
+    },
+    {
+      "sku": "A17-02",
+      "original": "assets/products/A17-02.png",
+      "improved": "assets/products_hd/A17-02.png",
+      "original_pixels": [
+        192,
+        192
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "57defc948b0a7c57892a6af47883f279a9911da429dfe170bbcc5afdc29d0975",
+      "sha256_improved": "4cb22f423d94257b394294a5beab8de4a6f69f55b8fc881a3f517a845363592d"
+    },
+    {
+      "sku": "A17-03",
+      "original": "assets/products/A17-03.png",
+      "improved": "assets/products_hd/A17-03.png",
+      "original_pixels": [
+        400,
+        400
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "380cc8f2401a83250b978b80ec5c39103510950d3533096920b0cea015b9cb51",
+      "sha256_improved": "1bee0cc5a3864257d4a115af521dbbdb514ab9c5f2a1353d8bade2ae66d53867"
+    },
+    {
+      "sku": "A17-04",
+      "original": "assets/products/A17-04.png",
+      "improved": "assets/products_hd/A17-04.png",
+      "original_pixels": [
+        400,
+        400
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "6aacc80fa0788b9e633a1b134495b4937117ce43445e50c1e5087e5368fba526",
+      "sha256_improved": "a30cddb853e4ed7ba9f7bac3c42c972b1cf932ee3a5e158d350ceb0dd5ba92ac"
+    },
+    {
+      "sku": "A17-05",
+      "original": "assets/products/A17-05.png",
+      "improved": "assets/products_hd/A17-05.png",
+      "original_pixels": [
+        400,
+        400
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "e656b844786d7802eca582eb3f5e6646b7a60512aefec0f8e1064053c6f76046",
+      "sha256_improved": "a9d2e8e374026bb30f76819f1d4ddadb795083f286a12908a1ebf311d468266c"
+    },
+    {
+      "sku": "A17-06",
+      "original": "assets/products/A17-06.png",
+      "improved": "assets/products_hd/A17-06.png",
+      "original_pixels": [
+        400,
+        400
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "705381c433ce6f90a8b73cf2852a2bfd42cba1ada80d1d528cb78f2e1159e6f6",
+      "sha256_improved": "7c8e1f2433c7a5f13c9982069c176a60515956706f9f1bb997aeef0c0f77b1d0"
+    },
+    {
+      "sku": "A36-01",
+      "original": "assets/products/A36-01.png",
+      "improved": "assets/products_hd/A36-01.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "beb0146b3b648cd929f372c123336499841edd96c156924a53d15852260c1b0c",
+      "sha256_improved": "6d88c1302a47e91eaebc27249d6615c25dbc426a9e2e539268a31d55b1d5fc53"
+    },
+    {
+      "sku": "A36-02",
+      "original": "assets/products/A36-02.png",
+      "improved": "assets/products_hd/A36-02.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "c08ff02d066382a2856b34d6009586e84a0a73b634cf6285583e8ab4e4fa3112",
+      "sha256_improved": "38e33fbe6ab6b97c4be3655743348d5aace36e12671163510516db27cd4a16e8"
+    },
+    {
+      "sku": "IP14-01",
+      "original": "assets/products/IP14-01.png",
+      "improved": "assets/products_hd/IP14-01.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "f78b9cbaee38b7560b6c1fccd35001f9b36f56d655e6139a29e4680c120104c5",
+      "sha256_improved": "9083f30f79ab624921b122eac41ed8c5d83fccc209f9f414dc3add5c1695af9c"
+    },
+    {
+      "sku": "IP14-02",
+      "original": "assets/products/IP14-02.png",
+      "improved": "assets/products_hd/IP14-02.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "e04d007fdb65454d3f3a0cdaad7eaf2029ed03099dad2c9b92b32918316efb2c",
+      "sha256_improved": "b72e3bf970833ef94a667dc7835a6283057b2db4abf7bee9df0b399af68648c4"
+    },
+    {
+      "sku": "IP17PM-01",
+      "original": "assets/products/IP17PM-01.png",
+      "improved": "assets/products_hd/IP17PM-01.png",
+      "original_pixels": [
+        220,
+        220
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "dc034fb9cd6abdb1271a31118cfb7a0ebc41d9e2b51206ca512018863d64c889",
+      "sha256_improved": "d561dcf549314d09092edfce6fe402f5286b6d4e313df8cc9a4614b8ac7ee9e4"
+    },
+    {
+      "sku": "IP17PM-02",
+      "original": "assets/products/IP17PM-02.png",
+      "improved": "assets/products_hd/IP17PM-02.png",
+      "original_pixels": [
+        226,
+        226
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "2942f1f0625b1908598d22780a0468c1502bde78031c07c47382c956d04912b4",
+      "sha256_improved": "ea1a0ea4070c79d2e84f71a400c6f982247c5c4764093df1d372face8528e58e"
+    },
+    {
+      "sku": "IP17PM-03",
+      "original": "assets/products/IP17PM-03.png",
+      "improved": "assets/products_hd/IP17PM-03.png",
+      "original_pixels": [
+        124,
+        124
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "2d8cfd66ab4639d77c0ac3c9a753e158dd096affa731277509ed11228d7f9ca1",
+      "sha256_improved": "1d2e7bfbca1466dfc98adea7918637e6a27e5b68ff438e58092aa8ede76dd58d"
+    },
+    {
+      "sku": "IPX-01",
+      "original": "assets/products/IPX-01.png",
+      "improved": "assets/products_hd/IPX-01.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "5d5e1c3b0eb87e5f12dcac45e86c9f51f859a3cca3f7b2ab9ab05e913dc39e24",
+      "sha256_improved": "94cca9f28de738fd24bb49fad0f5c32f220860d8b08bc21b1ec4b68ab3a0c467"
+    },
+    {
+      "sku": "N10-01",
+      "original": "assets/products/N10-01.png",
+      "improved": "assets/products_hd/N10-01.png",
+      "original_pixels": [
+        240,
+        240
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "d387fc18c87ebfc5d31332b5e6dca3c23a6621e1b7f1c25ffaf03161808cf96a",
+      "sha256_improved": "7cc61af76921d469c337540a802cb722e001a60cbbbd06f5e0dbe294f7f20273"
+    },
+    {
+      "sku": "N20-01",
+      "original": "assets/products/N20-01.png",
+      "improved": "assets/products_hd/N20-01.png",
+      "original_pixels": [
+        200,
+        200
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "85ba1550edf0476bffac971fa489455e280578e1e9ba680943d7854aeaee08b4",
+      "sha256_improved": "31528a08c7380514b828d23c0610b94360ecc62d3b13edd68a28303e39a2ac2c"
+    },
+    {
+      "sku": "S22-01",
+      "original": "assets/products/S22-01.png",
+      "improved": "assets/products_hd/S22-01.png",
+      "original_pixels": [
+        192,
+        192
+      ],
+      "improved_pixels": [
+        1254,
+        1254
+      ],
+      "sha256_original": "35bd95dd713a48cddbad7024153bda3ad50c45bbcecc57f323d234300a35ecea",
+      "sha256_improved": "46b0037ba5e8d0ef276b13ac5eb7729d36b058276707a834ed38d6e065edd310"
+    }
+  ]
+}

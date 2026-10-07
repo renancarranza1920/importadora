@@ -1,11 +1,8 @@
-"""Generate self-contained ad documents from original, unaltered product photos.
-
-No external service or credentials. Render the documents to PNG with a browser.
-The seed is a historical catalog, not a live-stock assertion.
-"""
+"""Generate dated campaign documents using an explicit Oracle stock snapshot."""
 import argparse
 import base64
 import csv
+from datetime import date
 from html import escape
 import json
 from pathlib import Path
@@ -21,11 +18,31 @@ def supplier_compatibility(product):
     return any('18 Pro Max' in model for model in model_names(product))
 
 
-def ad_document(product, story=False):
-    # Display the original bytes intact; do not reconstruct the actual product.
+def apply_stock(products, snapshot):
+    """Never silently substitute historical seed quantities for current stock."""
+    captured = date.fromisoformat(snapshot['captured_date'])
+    stocks = {}
+    for row in snapshot['products']:
+        sku, stock = row['sku'], row['stock']
+        if sku in stocks or type(stock) is not int or stock < 0:
+            raise ValueError(f'Existencias inválidas o referencia duplicada: {sku}')
+        stocks[sku] = stock
+    active = [p for p in products if p.get('active', True)]
+    if set(stocks) != {p['sku'] for p in active}:
+        raise ValueError('La consulta de existencias debe cubrir exactamente las referencias activas del catálogo.')
+    return [dict(p, stock=stocks[p['sku']], stock_date=captured.strftime('%d/%m/%Y')) for p in active]
+
+
+def photo_source(product, original=False):
     source = (ROOT / product['image_path']).resolve()
     if not source.is_relative_to(ROOT / 'assets'):
         raise ValueError('La foto debe estar dentro de assets/.')
+    enhanced = ROOT / 'assets/products_hd' / f"{product['sku']}.png"
+    return source if original or not enhanced.exists() else enhanced
+
+
+def ad_document(product, story=False, original=False):
+    source = photo_source(product, original)
     photo = base64.b64encode(source.read_bytes()).decode('ascii')
     models = model_names(product)
     model_text = '<br>'.join(escape(m) for m in models)
@@ -44,6 +61,8 @@ def ad_document(product, story=False):
 .topline{{font-size:20px;color:#557461;font-weight:700;letter-spacing:3px;margin-top:4px}}
 .photo{{min-height:0;flex:1;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #d9e1d7;border-radius:32px;overflow:hidden}}
 .photo img{{height:100%;width:100%;object-fit:contain;display:block}}
+.stock{{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 22px;background:#e9dfc6;border-radius:18px}}
+.stock strong{{font-size:32px;line-height:1.15}}.stock small{{font-size:18px;line-height:1.3;color:#557461;text-align:right}}
 .models{{text-align:center;background:#123e32;color:#fff;border-radius:26px;padding:26px 20px}}
 .models small{{display:block;font-size:20px;font-weight:700;color:#e6c68a;letter-spacing:3px;margin-bottom:14px}}
 .models strong{{font-size:{48 if len(models)>2 else 60}px;line-height:1.15;display:block}}
@@ -57,11 +76,12 @@ def ad_document(product, story=False):
 </style></head><body><article class="ad" aria-label="Anuncio de protector {escape(product['sku'])}">
 <div class="brand">IMPORTADORA <small>TIENDA EN LÍNEA</small></div>
 <div class="topline">PROTECTORES PARA TU NEGOCIO</div>
-<div class="photo"><img src="data:image/png;base64,{photo}" alt="Protector original {escape(product['sku'])}"></div>
+<div class="photo"><img src="data:image/png;base64,{photo}" alt="Protector referencia {escape(product['sku'])}"></div>
+<div class="stock"><strong>QUEDAN {product['stock']} UNIDADES</strong><small>Stock al {escape(product['stock_date'])}<br>Existencias por referencia</small></div>
 <div class="models"><small>{model_heading}</small><strong>{model_text}</strong>{fit_note}</div>
 <div class="terms"><div><strong>{price}</strong><small>USD por unidad · precio mayorista</small></div><div class="minimum">MÍNIMO 3 UNIDADES</div></div>
 <div class="cta">Combina modelos · Pide al 7311 3611<small>Todo el país · Envío económico a puntos específicos<br>Domicilio $5 · Tarifa económica según el total de compra</small></div>
-<div class="sku">REFERENCIA {escape(product['sku'])} · Disponibilidad por confirmar</div>
+<div class="sku">REFERENCIA {escape(product['sku'])} · Confirma disponibilidad antes de pagar</div>
 </article></body></html>'''
 
 
@@ -69,9 +89,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--catalog', type=Path, default=ROOT / 'data/catalog_seed.json')
     parser.add_argument('--output', type=Path, default=ROOT / 'output/meta-ads')
+    parser.add_argument('--stock-file', type=Path, default=ROOT / 'data/campaign_stock.json')
+    parser.add_argument('--original-photos', action='store_true', help='Usar las fotografías del proveedor sin mejora digital.')
+    parser.add_argument('--image-format', choices=('jpg', 'png'), default='jpg')
     parser.add_argument('--web-url', default='', help='URL real del catálogo para generar enlaces; no incluir secretos.')
     args = parser.parse_args()
-    products = json.loads(args.catalog.read_text(encoding='utf-8'))['products']
+    try:
+        snapshot = json.loads(args.stock_file.read_text(encoding='utf-8'))
+        products = apply_stock(json.loads(args.catalog.read_text(encoding='utf-8'))['products'], snapshot)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        parser.error(f'No se pueden generar anuncios con stock real: {error}')
     args.output.mkdir(parents=True, exist_ok=True)
     rows, needs_review = [], []
     for product in products:
@@ -84,7 +111,7 @@ def main():
         (args.output / folder).mkdir(exist_ok=True)
         for story in (False, True):
             name = f"{product['sku']}-{'story' if story else 'feed'}.html"
-            (args.output / folder / name).write_text(ad_document(product, story), encoding='utf-8')
+            (args.output / folder / name).write_text(ad_document(product, story, args.original_photos), encoding='utf-8')
         query = dict(vista='pedidos', ref=product['sku'], utm_source='meta', utm_medium='paid_social',
                      utm_campaign='protectores_mayorista', utm_content=product['sku'])
         if args.web_url:
@@ -95,6 +122,7 @@ def main():
             link = '/?' + urlencode(query)
         models = ' / '.join(model_names(product))
         copy = (f"Protectores SOLO para {models}. {product['sku']}: ${product['price_cents']/100:.2f} por unidad. "
+                f"Quedan {product['stock']} unidades de esta referencia (stock al {product['stock_date']}; compartido entre sus modelos compatibles). "
                 'Venta mayorista desde 3 unidades combinadas. Tienda en línea, sin local físico. '
                 'Envíos a todo el país: económico a puntos específicos con costo según el total de tu compra, '
                 'o personalizado a domicilio por $5. '
@@ -103,26 +131,33 @@ def main():
         if supplier:
             copy = copy.replace(f'Protectores SOLO para {models}.', f'Protectores para {models}, según la etiqueta del proveedor. Compatibilidad pendiente de comprobar físicamente.')
         rows.append(dict(referencia=product['sku'], modelos=models, precio_usd=f"{product['price_cents']/100:.2f}",
+                         unidades_restantes=product['stock'], fecha_stock=product['stock_date'],
+                         fotografia='Mejora digital' if photo_source(product, args.original_photos).parent.name == 'products_hd' else 'Original del proveedor',
                          titulo=f'{"Según proveedor: " if supplier else "Solo "}{models} · Desde 3 unidades', texto=copy, enlace=link,
                          carpeta=folder, estado_compatibilidad='Proveedor: confirmar ajuste físico' if supplier else 'Catálogo: confirmar variante y disponibilidad'))
     with (args.output / 'copys-y-enlaces.csv').open('w', encoding='utf-8-sig', newline='') as file:
-        writer = csv.DictWriter(file, fieldnames=['referencia','modelos','precio_usd','titulo','texto','enlace','carpeta','estado_compatibilidad'])
+        writer = csv.DictWriter(file, fieldnames=['referencia','modelos','precio_usd','unidades_restantes','fecha_stock','fotografia','titulo','texto','enlace','carpeta','estado_compatibilidad'])
         writer.writeheader(); writer.writerows(rows)
     with (args.output / 'REFERENCIAS.csv').open('w', encoding='utf-8-sig', newline='') as file:
-        writer = csv.DictWriter(file, fieldnames=['referencia','modelos','publicacion','historia','estado_compatibilidad'])
+        writer = csv.DictWriter(file, fieldnames=['referencia','modelos','unidades_restantes','fecha_stock','fotografia','publicacion','historia','estado_compatibilidad'])
         writer.writeheader()
         writer.writerows(dict(referencia=r['referencia'], modelos=r['modelos'],
-                              publicacion=f"{r['carpeta']}/{r['referencia']}-feed.png",
-                              historia=f"{r['carpeta']}/{r['referencia']}-story.png",
+                              unidades_restantes=r['unidades_restantes'], fecha_stock=r['fecha_stock'], fotografia=r['fotografia'],
+                              publicacion=f"{r['carpeta']}/{r['referencia']}-feed.{args.image_format}",
+                              historia=f"{r['carpeta']}/{r['referencia']}-story.{args.image_format}",
                               estado_compatibilidad=r['estado_compatibilidad']) for r in rows)
+    with (args.output / 'PRIORIDAD-STOCK.csv').open('w', encoding='utf-8-sig', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=['referencia','modelos','unidades_restantes','fecha_stock'])
+        writer.writeheader()
+        writer.writerows({k:r[k] for k in writer.fieldnames} for r in sorted(rows, key=lambda r:(-r['unidades_restantes'],r['referencia'])))
     previews = ''
     for folder in sorted({r['carpeta'] for r in rows}):
-        group = [r for r in rows if r['carpeta'] == folder]
+        group = sorted([r for r in rows if r['carpeta'] == folder], key=lambda r:(-r['unidades_restantes'],r['referencia']))
         previews += f'<h2>{escape(folder)} · {len(group)} referencias · {len(group)*2} imágenes</h2><main>'
-        previews += ''.join(f'<figure><a href="{folder}/{r["referencia"]}-feed.html"><img src="{folder}/{r["referencia"]}-feed.png" alt="{escape(r["modelos"])}"></a><figcaption>{escape(r["referencia"])} · {escape(r["modelos"])}<br>{escape(r["estado_compatibilidad"])}<br><a href="{folder}/{r["referencia"]}-feed.html">Feed</a> · <a href="{folder}/{r["referencia"]}-story.html">Historia</a></figcaption></figure>' for r in group)
+        previews += ''.join(f'<figure><a href="{folder}/{r["referencia"]}-feed.{args.image_format}"><img src="{folder}/{r["referencia"]}-feed.{args.image_format}" alt="{escape(r["modelos"])}"></a><figcaption>{escape(r["referencia"])} · {escape(r["modelos"])}<br><strong>Quedan {r["unidades_restantes"]} unidades</strong> · {r["fecha_stock"]}<br>{escape(r["estado_compatibilidad"])}<br><a href="{folder}/{r["referencia"]}-feed.{args.image_format}">Feed</a> · <a href="{folder}/{r["referencia"]}-story.{args.image_format}">Historia</a></figcaption></figure>' for r in group)
         previews += '</main>'
-    (args.output / 'index.html').write_text('<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Piezas de IMPORTADORA</title><style>body{font:16px Arial;background:#f6f5ef;color:#173e31;margin:30px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}figure{margin:0}img{width:100%;border-radius:12px}figcaption{padding:10px;line-height:1.6}</style><h1>Anuncios por referencia</h1>' + f'<p>{len(rows)} referencias · {len(rows)*2} imágenes en dos formatos. Cada referencia es un diseño; puede admitir varios modelos de teléfono.</p>' + '<p>Borradores basados en el catálogo inicial. Confirmar precio, existencias y compatibilidad antes de invertir. PNG: feed 1080×1350; historias 1080×1920.</p>' + previews + '</html>', encoding='utf-8')
-    (args.output / 'LEEME.txt').write_text(f'{len(rows)} referencias, {len(rows)*2} imágenes: cada referencia tiene publicación e historia.\nCarpetas por marca: Samsung e iPhone.\nPiezas generadas con fotografías originales, sin alterar el producto.\nFuente: ' + str(args.catalog) + '\nNo representa el inventario actual de Oracle.\nConfirma precios, existencias y compatibilidades antes de publicar.\nIncluidos como borradores con etiqueta del proveedor, pendientes de ajuste físico (iPhone 17PM/18PM): ' + ', '.join(needs_review) + '\nEnlaces relativos: anteponer la URL real de tu tienda si no usaste --web-url.\nLos parámetros UTM etiquetan enlaces; esta app no incorpora medición de conversiones de Meta.\n', encoding='utf-8')
+    (args.output / 'index.html').write_text('<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Piezas de IMPORTADORA</title><style>body{font:16px Arial;background:#f6f5ef;color:#173e31;margin:30px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}figure{margin:0}img{width:100%;border-radius:12px}figcaption{padding:10px;line-height:1.6}</style><h1>Anuncios por referencia</h1>' + f'<p>{len(rows)} referencias · {len(rows)*2} imágenes · {sum(r["unidades_restantes"] for r in rows)} unidades al {products[0]["stock_date"]}. Cada referencia es un diseño; sus modelos compatibles comparten stock.</p><p>{args.image_format.upper()}: feed 1080×1350; historias 1080×1920. Fotos optimizadas digitalmente; originales conservados en el repositorio. Las cantidades impresas no se actualizan con las ventas.</p>' + previews + '</html>', encoding='utf-8')
+    (args.output / 'LEEME.txt').write_text(f'{len(rows)} referencias, {len(rows)*2} imágenes: cada referencia tiene publicación e historia.\nStock: {sum(r["unidades_restantes"] for r in rows)} unidades al {products[0]["stock_date"]}, consulta de Oracle compartida por el propietario.\nCantidad por referencia, compartida entre sus modelos compatibles. No se actualiza automáticamente con las ventas.\nCarpetas por marca: Samsung e iPhone.\nFotos optimizadas digitalmente: no recuperan con certeza detalles ilegibles; originales conservados en assets/products.\nPrecios y compatibilidades proceden del catálogo: confirmar antes de publicar.\nIncluidos como borradores con etiqueta del proveedor, pendientes de ajuste físico (iPhone 17PM/18PM): ' + ', '.join(needs_review) + '\nEnlaces relativos: anteponer la URL real de tu tienda si no usaste --web-url.\nLos parámetros UTM etiquetan enlaces; esta app no incorpora medición de conversiones de Meta.\n', encoding='utf-8')
     print(f'{len(rows)} referencias, {len(rows)*2} documentos. Incluidos con nota del proveedor: {", ".join(needs_review)}. Salida: {args.output}')
 
 
