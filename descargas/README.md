@@ -7,7 +7,7 @@ La prueba piloto de **mariposas crema y negro** usa una sola imagen con los dos 
 - [Descargar imagen de mariposas](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/mariposas-crema-negro.png)
 - [Descargar campaña unificada: imagen, datos y texto](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/campana-mariposas-unificada.zip)
 
-La imagen unificada conserva el diseño limpio de los anuncios originales: fondo marfil, tipografía sencilla y bloques verde oscuro y beige, con crema a la izquierda y negro a la derecha.
+La imagen unificada conserva el diseño limpio de los anuncios originales: fondo marfil, tipografía sencilla y bloques verde oscuro y beige, con crema a la izquierda y negro a la derecha. Muestra las unidades por referencia sin la franja «Stock al» ni fecha en la imagen.
 
 Esta pieza reúne fotografías representativas del diseño; el ajuste corresponde a cada modelo. Para el piloto, seleccionar **imagen única**, destino WhatsApp y presupuesto **total de $2**, no diario. Las cantidades son estáticas y deben actualizarse si cambia el inventario.
 
@@ -19,7 +19,7 @@ Esta pieza reúne fotografías representativas del diseño; el ajuste correspond
 | Solo iPhone | 12 imágenes de 6 referencias; textos y fotografías incluidos | [ZIP de iPhone](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/anuncios-iphone.zip) |
 | Proyecto web | Código, originales, fotografías mejoradas, consulta de existencias, pruebas y documentación; sin bases, contraseñas ni secretos | [ZIP del proyecto](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/importadora-publicar.zip) |
 
-Cada imagen muestra **QUEDAN N UNIDADES** y **Stock al 07/10/2026**, según la consulta de Oracle compartida por el propietario. Las cantidades se comparten entre los modelos compatibles de cada referencia. Estos anuncios son archivos estáticos: hay que actualizarlos cuando cambien las existencias. `PRIORIDAD-STOCK.csv` ordena las referencias de mayor a menor stock.
+Los anuncios individuales muestran **QUEDAN N UNIDADES** y **Stock al 07/10/2026**, según la consulta de Oracle compartida por el propietario. La imagen unificada de mariposas conserva las cantidades sin mostrar fecha. Las cantidades se comparten entre los modelos compatibles de cada referencia. Estos anuncios son archivos estáticos: hay que actualizarlos cuando cambien las existencias. `PRIORIDAD-STOCK.csv` ordena las referencias de mayor a menor stock.
 
 **48 imágenes son 24 referencias/diseños en dos formatos.** Samsung: 18 referencias, 36 imágenes. iPhone: 6 referencias, 12 imágenes. Los JPG se exportan con calidad 95 %, publicación 1080×1350 e historia 1080×1920. Las fotografías mejoradas están incluidas una sola vez por referencia; los documentos HTML las usan sin duplicar archivos.
 
