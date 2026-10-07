@@ -1,0 +1,11 @@
+# Preferencias del propietario
+
+- El despliegue de la tienda está en Oracle Cloud, en Docker, dentro de `~/importadora` del servidor Ubuntu. El contenedor web se llama `importadora`, imagen `importadora`, puerto `127.0.0.1:8501->8501`. PostgreSQL 18 corre por separado en `importadora_db`; no reiniciarlo para aplicar cambios de interfaz.
+- Al entregar cambios de la web, incluir comandos concretos para actualizar ese despliegue. Antes de recrear el contenedor, comprobar sus volúmenes, configuración y persistencia de datos; no inventar nombres, puertos externos ni credenciales.
+- El flujo preferido para actualizar Oracle es descargar los cambios de la rama `main` del repositorio con Git, desde `~/importadora`. Dar comandos basados en `git pull --ff-only origin main`; no proponer transferencia de ZIP como flujo habitual. Indicar si los cambios aún no están integrados en `main`. El Dockerfile usa `COPY . .`, por lo que actualizar el checkout requiere aplicar el código al contenedor o reconstruir y recrear la imagen con la configuración existente.
+- La tienda es exclusivamente en línea, sin local físico. Ambos envíos cubren todo el país: económico a puntos específicos (tarifa según el total de compra; no hay tabla de tarifas confirmada) y personalizado a domicilio por $5. No inventar plazos ni puntos de entrega.
+- El asistente de consultas debe usar preguntas y respuestas predeterminadas, sin IA ni predicciones.
+- El catálogo actual es mayorista, con un mínimo de tres unidades combinadas entre modelos y diseños disponibles. El catálogo minorista se incorporará cuando el propietario lo proporcione.
+- El propietario no usa Docker Compose y no recuerda el comando original de arranque. Conservar el contenedor existente para actualizaciones rápidas; inspeccionar antes de recrear.
+- Priorizar la experiencia móvil y mostrar claramente las compatibilidades reales. No ampliar compatibilidades sin confirmación del propietario.
+- El propietario aclaró que la etiqueta «iPhone 17 Pro Max / 18 Pro Max» de IP17PM-01, IP17PM-02 e IP17PM-03 viene del proveedor. No informó una prueba física; la compatibilidad conjunta sigue pendiente de verificar para publicidad.

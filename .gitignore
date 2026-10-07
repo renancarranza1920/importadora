@@ -11,3 +11,4 @@ ACCESO_LOCAL.txt
 tmp/
 output/
 *.log
+backups/

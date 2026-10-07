@@ -1,6 +1,16 @@
 # Verificación de IMPORTADORA
 
-Fecha de última verificación: 16 de septiembre de 2026.
+## Tienda móvil, consultas fijas y campaña por referencia — 6 de octubre de 2026
+
+- **80 pruebas aprobadas** con Python 3.12. Se incorporaron regresiones del filtro exacto de teléfono, enlace publicitario por referencia, mínimo mayorista y respuestas fijas basadas en disponibilidad. Las pruebas de inventario y ventas continúan usando bases temporales.
+- Chromium a 320, 390, 768 y 1440 píxeles: catálogo y asistente sin desbordamiento horizontal, panel de preguntas dentro de la pantalla, respuestas de tienda en línea, mínimo combinado y envíos verificadas. No equivale a una prueba en cada modelo de celular físico.
+- Pedido público de una o dos unidades bloqueado; desde tres habilitado. Las solicitudes no descuentan stock. La tarifa económica se confirma según el total; el envío personalizado a domicilio se informa como $5, sin añadirlo silenciosamente al subtotal de productos.
+- Contenedor Docker de prueba: app funcional, salud HTTP y actualización con `scripts/actualizar_oracle.sh` verificados. El stock A06-01 se redujo a nueve antes de actualizar, y permaneció en nueve tras el reinicio. No se conectó a PostgreSQL de Oracle ni se modificó la tienda publicada.
+- La construcción normal en este entorno de pruebas no resolvió DNS desde el constructor Docker, incluso con su red de host. Se validó la imagen usando un Dockerfile temporal con instalación sin red desde wheels descargados con verificación TLS normal. `deploy/Dockerfile` conserva la instalación normal para el servidor. No se desactivó TLS ni se cambiaron dependencias para ocultar el fallo de red.
+- 42 PNG exportados desde los documentos de anuncio: 21 referencias en feed 1080×1350 e historias 1080×1920. Imágenes originales intactas; tres referencias etiquetadas 17PM/18PM pendientes de confirmar. Las cantidades de campaña proceden del catálogo inicial, no de la base de Oracle.
+- Paquete de actualización validado y sin bases, claves o secretos. La actualización de Oracle y la publicación de los anuncios siguen siendo acciones del propietario.
+
+Las secciones siguientes conservan las verificaciones anteriores, hasta el 16 de septiembre de 2026.
 
 ## Bandeja de solicitudes
 

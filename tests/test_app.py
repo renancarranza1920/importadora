@@ -344,6 +344,7 @@ def test_public_cart_sold_out_and_changed_price(ui):
     p = db.get_product("A06-01")
     db.save_product(dict(p, price_cents=400), p["version"])
     navigate(app, "Mi pedido")
+    field(app.number_input, "Cantidad · A06-01").set_value(3).run()
     assert button(app, "Pedir por WhatsApp").disabled
     field(app.checkbox, "Aceptar precio actual").check().run()
     assert not button(app, "Pedir por WhatsApp").disabled
@@ -399,6 +400,7 @@ def test_separate_storefront_needs_no_phone_or_login(ui):
     assert not any(e.label == "Acceso administrador" for e in app.button)
     app.button(key="request_add_A06-01").click().run()
     app.radio(key="public_nav").set_value("Mi pedido").run()
+    field(app.number_input, "Cantidad · A06-01").set_value(3).run()
     assert not any("teléfono" in e.label.lower() or "código de país" in e.label for e in app.text_input)
     assert not app.checkbox
     no_errors(button(app, "Pedir por WhatsApp").click().run())

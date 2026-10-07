@@ -28,7 +28,7 @@ La base local está en `data/inventory.db`. Reiniciar la app no vuelve a cargar 
 
 ## Pedidos públicos por WhatsApp
 
-Comparte `https://importadora-myrr4sgdikyma8ew9bmgcm.streamlit.app/?vista=pedidos` después de actualizar la app. Con `PUBLIC_CATALOG = true`, el cliente ve un catálogo independiente, sin menú administrativo. Puede agregar productos, revisar **Mi pedido** y tocar **Pedir por WhatsApp** sin indicar teléfono; el nombre es opcional. Se guarda la solicitud y se intenta abrir WhatsApp con el mensaje preparado para **+503 7311 3611**. Si el navegador bloquea la apertura, queda **Continuar en WhatsApp**. El cliente pulsa Enviar en WhatsApp; la app no envía mensajes automáticamente ni sabe si fueron enviados. No se muestran indicaciones de envío ni del tipo de tienda.
+Comparte `https://importadora-myrr4sgdikyma8ew9bmgcm.streamlit.app/?vista=pedidos` después de actualizar la app, o la ruta `/?vista=pedidos` de tu dominio en Oracle. Con `PUBLIC_CATALOG = true`, el cliente ve un catálogo independiente, sin menú administrativo. Puede agregar productos, revisar **Mi pedido** y tocar **Pedir por WhatsApp** desde tres unidades sin indicar teléfono; el nombre es opcional. Se guarda la solicitud y se intenta abrir WhatsApp con el mensaje preparado para **+503 7311 3611**. Si el navegador bloquea la apertura, queda **Continuar en WhatsApp**. El cliente pulsa Enviar en WhatsApp; la app no envía mensajes automáticamente ni sabe si fueron enviados. La tienda indica que funciona en línea, sin local físico, y cotiza envíos según la ubicación.
 
 Para administrar, entra a `https://importadora-myrr4sgdikyma8ew9bmgcm.streamlit.app/?vista=admin` e inicia sesión. **Solicitudes** abre una bandeja de pedidos nuevos, con los más recientes primero. Las etiquetas **Nuevas**, **Contactadas**, **Con venta**, **Canceladas** y **Todas** muestran sus contadores. En computadora se presenta como tabla; en pantallas estrechas, como tarjetas con cliente, referencia, fecha, unidades, total y estado. Busca por nombre, número de solicitud o contacto, y toca **Abrir solicitud**. No hay que elegir pedidos en un combo. La bandeja pagina de doce en doce; dentro del detalle puedes ir a **Anterior**, **Siguiente** o **Volver a solicitudes**, conservando la búsqueda, estado y página.
 
@@ -39,6 +39,12 @@ Para cerrar, confirma que el cliente aceptó y que recibiste el pago. La venta v
 El pedido original y la última revisión se conservan en la base y los respaldos (versión 3, compatible al restaurar respaldos anteriores). Solo el administrador ve la bandeja; el cliente solo ve el pedido registrado en su propia sesión. El carrito sin registrar no sobrevive necesariamente a un cierre o reinicio. Se admiten hasta 20 referencias por pedido y cinco solicitudes por sesión en diez minutos; este límite no sustituye protección avanzada contra abuso.
 
 ## Publicación
+
+### Oracle Cloud con Docker
+
+La tienda también se ejecuta en Oracle Cloud con Docker. Consulta [la actualización en Oracle](docs/ORACLE_DOCKER.md) para aplicar cambios conservando el contenedor, su configuración y los datos. El asistente público tiene preguntas fijas; el catálogo permite seleccionar el teléfono y muestra las compatibilidades en cada tarjeta. Los pedidos mayoristas requieren al menos tres unidades.
+
+Consulta [el análisis y la campaña por modelo](docs/CAMPANA_META_ADS.md) para los anuncios, textos, cantidades iniciales y la estrategia de prueba. `python scripts/preparar_anuncios.py` genera documentos de anuncio con las fotografías originales; no modifica existencias.
 
 Sigue **[la guía para publicar en internet](docs/PUBLICAR_EN_INTERNET.md)**. La combinación preparada es Streamlit Community Cloud para ejecutar la app y PostgreSQL en Neon para conservar tus datos.
 

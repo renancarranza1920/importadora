@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 import streamlit as st
 
 from inventory import MAX_TOTAL_CENTS
+from shop import MINIMUM_UNITS, SHIPPING_COPY
 
 WHATSAPP = "50373113611"
 API_VERSION = 3
@@ -35,7 +36,7 @@ def whatsapp_link(row, cart=None, recipient=WHATSAPP):
     lines = [f"Solicitud {row['id'][:8].upper()}", f"Cliente: {row['customer']}"]
     for sku, item in cart.items():
         lines.append(f"{sku} · {item.get('name', sku)[:60]} · {item['quantity']} x {money(item['price_cents'])} = {money(item['quantity'] * item['price_cents'])}")
-    lines.extend([f"Total estimado: {money(total(cart))} USD", "Sujeto a confirmación de disponibilidad y precio."])
+    lines.extend([f"Total de productos: {money(total(cart))} USD", "Quiero coordinar el envío: económico a punto de entrega (costo según mi compra) o personalizado a domicilio ($5.00).", "Sujeto a confirmación de disponibilidad y precio."])
     return f"https://wa.me/{recipient}?{urlencode({'text': chr(10).join(lines)})}"
 
 
@@ -117,6 +118,13 @@ def public_order(db, summary, reel=None, nav_key="nav"):
         st.session_state["public_cart"] = revised
         st.session_state["public_request"] = str(uuid4())
         st.rerun()
+    units = sum(item["quantity"] for item in revised.values())
+    if units < MINIMUM_UNITS:
+        st.info(f"Pedido mayorista desde {MINIMUM_UNITS} unidades combinadas. Añade {MINIMUM_UNITS - units} más para continuar.")
+        invalid = True
+    else:
+        st.caption(f"Pedido mínimo alcanzado · {units} unidades")
+    st.caption(SHIPPING_COPY + " El total de productos no incluye el envío.")
     with st.form("public_order"):
         customer = st.text_input("Tu nombre (opcional)", max_chars=100)
         st.caption("Al continuar se guarda tu solicitud y se abre WhatsApp con el pedido preparado.")

@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+/* System fonts keep the storefront readable without third-party font requests. */
 /* Never target st-* globally: that also matches Streamlit's icon font. */
-html,body,.stApp,button,input,textarea {font-family:'DM Sans',sans-serif;}
-h1,h2,h3 {font-family:'Manrope',sans-serif!important;letter-spacing:-.045em!important;}
+html,body,.stApp,button,input,textarea {font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+h1,h2,h3 {font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important;letter-spacing:-.045em!important;}
 .stMainBlockContainer {padding-top:4.5rem; max-width:1460px; padding-bottom:5rem;}
 [data-testid="stSidebar"] {background:#fff;border-right:1px solid #e5ece8;}
 [data-testid="stSidebar"] [data-testid="stSidebarContent"] {padding-top:1.2rem;}
@@ -223,4 +223,50 @@ button:focus-visible,a:focus-visible,.photo-reel:focus-visible,.photo-reel figur
  .cart-subtotal strong {font-size:18px;overflow-wrap:anywhere;}
  [data-testid="stTextInput"] input,[data-testid="stTextArea"] textarea,[data-testid="stNumberInput"] input {font-size:16px;}
  [data-testid="stToast"] {padding:16px;}
+}
+
+/* Public storefront: warm neutral surfaces, emerald accents, clear model labels. */
+.shop-brand > div {display:flex;align-items:center;gap:12px;min-width:0;}
+.shop-brand .shop-brand-mark {display:grid;place-items:center;background:#123e32;color:#fff;width:42px;height:42px;border-radius:13px;font-size:26px;font-weight:800;letter-spacing:-.05em;flex-shrink:0;}
+.shop-hero {max-width:none;background:linear-gradient(115deg,#123e32,#1c5745);color:white;padding:42px;border-radius:24px;margin:24px 0 18px;position:relative;overflow:hidden;}
+.shop-hero::after {content:'';position:absolute;width:300px;height:300px;border-radius:50%;border:50px solid #ffffff08;right:-110px;top:-100px;pointer-events:none;}
+.shop-hero h1 {color:#fff!important;font-size:clamp(32px,4.5vw,54px);font-weight:800;line-height:1.08;margin:10px 0 16px;padding:0;position:relative;z-index:1;}
+.shop-hero .eyebrow {color:#e6c68a;}
+.shop-hero p {color:#e1ede7;max-width:560px;line-height:1.6;}
+.shop-benefits {display:flex;flex-wrap:wrap;gap:8px;margin-top:24px;}
+.shop-benefits span {border:1px solid #ffffff35;border-radius:30px;padding:8px 12px;color:#fff;font-size:12px;font-weight:600;background:#ffffff08;}
+.card-models {background:#eef4ef;border:1px solid #d6e3d8;border-radius:9px;color:#173e31;padding:9px 10px;font-size:13px;line-height:1.45;font-weight:700;overflow-wrap:anywhere;}
+.card-models span {display:block;font-size:9px;letter-spacing:.1em;color:#446653;margin-bottom:3px;}
+.card-unit {color:#52685c;font-size:11px;margin:8px 0 4px;line-height:1.4;}
+.shop-footer {padding:28px 0 60px;margin-top:30px;border-top:1px solid #d4e0d8;color:#52685c;font-size:13px;line-height:1.6;}
+.shop-footer strong {color:#173e31;}
+.shop-footer p {margin:8px 0;}
+.shop-assistant {position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:50;font-size:14px;color:#173e31;}
+.shop-assistant-toggle {display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;list-style:none;padding:10px 17px;border-radius:30px;background:#123e32;color:#fff;font-weight:700;cursor:pointer;box-shadow:0 5px 24px #123e3226;}
+.shop-assistant-toggle::-webkit-details-marker {display:none;}
+.shop-assistant-toggle > span {display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:#ffffff22;font-size:16px;}
+.shop-assistant[open] .shop-assistant-toggle {background:#24513f;}
+.shop-assistant-panel {position:absolute;bottom:64px;right:0;width:355px;max-width:calc(100vw - 36px);max-height:min(560px,calc(100dvh - 155px));overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;padding:22px;border-radius:20px;background:#fff;border:1px solid #d4e0d8;box-shadow:0 12px 48px #123e3226;}
+.shop-assistant-heading {font-size:19px;line-height:1.3;font-weight:800;}
+.shop-assistant-intro {color:#52685c;font-size:13px;line-height:1.5;margin:8px 0 16px;}
+.shop-faq {border-top:1px solid #e5ece8;}
+.shop-faq summary {cursor:pointer;min-height:48px;box-sizing:border-box;padding:13px 4px;font-size:14px;font-weight:600;line-height:1.5;}
+.shop-faq p {margin:0 0 16px;line-height:1.65;font-size:13px;color:#52685c;overflow-wrap:anywhere;}
+.shop-contact {display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:12px;background:#123e32;color:#fff!important;text-decoration:none!important;font-weight:700;margin-top:16px;}
+.shop-assistant summary:focus-visible {outline:3px solid #b48a43;outline-offset:3px;}
+@media(max-width:640px) {
+ .shop-hero {padding:26px 22px;border-radius:20px;margin-top:18px;}
+ .shop-hero h1 {font-size:34px;}
+ .shop-hero p {font-size:14px;}
+ .shop-benefits {gap:6px;margin-top:18px;}
+ .shop-benefits span {font-size:11px;padding:7px 9px;}
+ .card-models {padding:7px;font-size:12px;}
+ .card-unit {font-size:10px;}
+ .shop-assistant {right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));}
+ .shop-assistant-panel {max-width:calc(100vw - 24px);padding:18px;}
+ .shop-footer {padding-bottom:80px;}
+ .shop-brand {font-size:17px;letter-spacing:.04em;}
+ .shop-brand > div {gap:10px;}
+ .shop-brand .shop-brand-mark {width:36px;height:36px;font-size:24px;}
+ .shop-brand > span {font-size:9px;letter-spacing:.1em;flex-shrink:0;}
 }

@@ -21,6 +21,7 @@ from sqlalchemy.exc import SQLAlchemyError
 import auth
 from ticket import ticket_png
 from inventory import Inventory, InventoryError, ROOT, MAX_TOTAL_CENTS, cents, clean_image
+from shop import MINIMUM_UNITS, SHIPPING_COPY, model_names, available_models, assistant_markup
 
 st.set_page_config(page_title="IMPORTADORA · Catálogo e inventario", page_icon="📦", layout="wide",
                    initial_sidebar_state="auto")
@@ -109,7 +110,7 @@ def flash(message):
 def reset_catalog_filters():
     # Explicit values also reset the browser widgets during a fragment rerun.
     st.session_state.update(search="", catalog_brand="Todas las marcas", catalog_category="Todas las categorías",
-                            catalog_order="Referencia", catalog_stock=True, catalog_page=1)
+                            catalog_order="Referencia", catalog_stock=True, catalog_page=1, catalog_model="Todos los modelos")
     st.session_state.pop("catalog_filters", None)
 
 
@@ -439,8 +440,11 @@ def login_page():
 def catalogue(seller, storefront=False):
     all_items = db.list_products()
     if storefront:
-        st.html('<div class="shop-hero"><div class="eyebrow">ELIGE TU PRÓXIMO PROTECTOR</div>'
-                '<h1>Tu estilo, tu protector.</h1><p>Explora las fotos, elige tus favoritos y prepara tu pedido por WhatsApp.</p></div>')
+        st.html('<div class="shop-hero"><div class="eyebrow">PROTECTORES · VENTA MAYORISTA</div>'
+                '<h1>Elige tu modelo.<br>Encuentra tu estilo.</h1>'
+                '<p>Fotos reales del catálogo, precios claros y tu pedido directo por WhatsApp.</p>'
+                f'<div class="shop-benefits"><span>Desde {MINIMUM_UNITS} unidades combinadas</span>'
+                '<span>Tienda 100% en línea</span><span>Envíos a todo el país</span></div></div>')
     else:
         st.html('<div class="hero"><div class="eyebrow">COLECCIÓN MAYORISTA · USD</div>'
             '<h1>El próximo favorito<br>de tus clientes.</h1>'
@@ -460,6 +464,12 @@ def catalogue(seller, storefront=False):
         st.toast(st.session_state.pop("catalog_notice"))
     st.html(f'<div class="section-line"><h2>Encuentra tu modelo</h2><span class="muted">{len(all_items)} referencias · {sum(p["stock"] for p in all_items):,} unidades disponibles</span></div>')
     search = st.text_input("Buscar por modelo o referencia", placeholder="Ej. A26, iPhone 17 Pro Max, A06-01…", key="search", icon=":material/search:")
+    models = ["Todos los modelos"] + available_models(all_items)
+    if st.session_state.get("catalog_model", "Todos los modelos") not in models:
+        st.session_state["catalog_model"] = "Todos los modelos"
+    model = st.selectbox("Modelo de tu teléfono", models, key="catalog_model")
+    if not seller:
+        st.caption("Solo los modelos indicados en cada protector. Verifica el modelo exacto de tu teléfono antes de pedir.")
     with (st.expander("Filtrar y ordenar") if storefront else st.container()):
         cols = st.columns([1, 1, 1])
         brand = cols[0].selectbox("Marca", ["Todas las marcas"] + sorted({p["brand"] for p in all_items}), key="catalog_brand")
@@ -467,18 +477,18 @@ def catalogue(seller, storefront=False):
         order = cols[2].selectbox("Ordenar", ["Referencia", "Menor precio", "Mayor precio", "Más disponibles"], key="catalog_order")
         only_stock = st.toggle("Solo artículos disponibles", value=True, key="catalog_stock")
         st.button("Limpiar filtros", on_click=reset_catalog_filters)
-    items = [p for p in all_items if product_matches(p, search) and (brand == "Todas las marcas" or p["brand"] == brand)
+    items = [p for p in all_items if product_matches(p, search) and (model == "Todos los modelos" or model in model_names(p)) and (brand == "Todas las marcas" or p["brand"] == brand)
              and (category == "Todas las categorías" or p["category"] == category) and (not only_stock or p["stock"] > 0)]
     if order != "Referencia":
         items.sort(key=lambda p: p["stock"] if order == "Más disponibles" else p["price_cents"],
                    reverse=order in ("Mayor precio", "Más disponibles"))
     st.caption(f"{len(items)} resultados · Precios mayoristas en dólares estadounidenses")
     if not items:
-        st.html('<div class="empty-state"><strong>No encontramos ese modelo</strong>Prueba otra referencia o cambia los filtros.</div>')
+        st.html('<div class="empty-state"><strong>No encontramos ese modelo</strong>Este catálogo incluye únicamente los modelos publicados. Revisa el modelo exacto de tu teléfono o restablece los filtros.</div>')
         st.button("Restablecer búsqueda", on_click=reset_catalog_filters)
         return
     pages = max(1, (len(items) + PRODUCTS_PER_PAGE - 1) // PRODUCTS_PER_PAGE)
-    filters = (search, brand, category, order, only_stock)
+    filters = (search, model, brand, category, order, only_stock)
     if st.session_state.get("catalog_filters") != filters or st.session_state.get("catalog_page", 1) > pages:
         st.session_state["catalog_page"] = 1
     st.session_state["catalog_filters"] = filters
@@ -511,7 +521,9 @@ def catalogue(seller, storefront=False):
                               type="primary", width="stretch", disabled=disabled,
                               on_click=add_catalog_item, args=(p["sku"], seller))
                 st.html(f'<div class="product-foot"><span class="product-price">{money(p["price_cents"])} <span class="price-currency">USD</span></span>'
-                        f'<span class="stock {stock_class}">{stock_text}</span></div>')
+                        f'<span class="stock {stock_class}">{stock_text}</span></div>'
+                        f'<div class="card-models"><span>SOLO PARA</span>{escape(" · ".join(model_names(p)))}</div>'
+                        '<div class="card-unit">Precio por unidad · Desde 3 unidades combinadas</div>')
                 with st.expander("Ver detalles"):
                     raw = product_image(p)
                     if raw:
@@ -934,8 +946,17 @@ st.session_state.setdefault("public_request", str(uuid4()))
 st.session_state.setdefault("public_source", str(uuid4()))
 storefront = PUBLIC and (st.query_params.get("vista") == "pedidos" or not seller and st.query_params.get("vista") != "admin")
 if storefront:
-    st.html('<style>[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"]{display:none!important;}</style>')
-    st.html(f'<div class="shop-brand">{escape(BUSINESS)}<span>CATÁLOGO</span></div>')
+    st.html('<style>[data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"],[data-testid="stHeader"]{display:none!important;}.stMainBlockContainer{padding-top:1.5rem!important;}</style>')
+    if not st.session_state.get("campaign_initialized"):
+        models = available_models(db.list_products())
+        campaign_model = st.query_params.get("modelo", "")
+        campaign_ref = st.query_params.get("ref", "")
+        if campaign_model in models:
+            st.session_state["catalog_model"] = campaign_model
+        if campaign_ref in {p["sku"] for p in db.list_products()}:
+            st.session_state["search"] = campaign_ref
+        st.session_state["campaign_initialized"] = True
+    st.html(f'<div class="shop-brand"><div><span class="shop-brand-mark" aria-hidden="true">i.</span>{escape(BUSINESS)}</div><span>MAYORISTA</span></div>')
     if "next_public_nav" in st.session_state:
         st.session_state["public_nav"] = st.session_state.pop("next_public_nav")
     current = st.radio("Explorar", ["Catálogo", "Mi pedido"], key="public_nav", horizontal=True, width="stretch",
@@ -951,6 +972,9 @@ if storefront:
     except SQLAlchemyError:
         st.error("No se pudo guardar el pedido. Tus productos siguen en el carrito; vuelve a intentarlo.")
         st.button("Reintentar")
+    st.html(f'<footer class="shop-footer"><strong>{escape(BUSINESS)} · Tu tienda en línea</strong>'
+            f'<p>{escape(SHIPPING_COPY)}</p><small>Sin local físico · Precios en USD · Mínimo de 3 unidades combinadas</small></footer>')
+    st.html(assistant_markup(db.list_products(), order_pages.WHATSAPP))
     st.stop()
 if "next_nav" in st.session_state:
     st.session_state["nav"] = st.session_state.pop("next_nav")

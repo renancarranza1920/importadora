@@ -119,10 +119,12 @@ def test_new_order_keeps_previous_whatsapp_link_in_collapsed_history(ui):
     app, store = ui
     app.button(key="request_add_A06-01").click().run()
     navigate(app, "Mi pedido")
+    field(app.number_input, "Cantidad · A06-01").set_value(3).run()
     button(app, "Pedir por WhatsApp").click().run()
     button(app, "Ver catálogo").click().run()
     app.button(key="request_add_A06-02").click().run()
     navigate(app, "Mi pedido")
+    field(app.number_input, "Cantidad · A06-02").set_value(3).run()
     previous = next(e for e in app.expander if e.label == "Solicitud anterior")
     assert not previous.proto.expanded
     assert not button(app, "Pedir por WhatsApp").disabled
