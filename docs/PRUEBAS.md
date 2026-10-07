@@ -1,5 +1,11 @@
 # Verificación de IMPORTADORA
 
+## Nombres exactos del sistema y mínimo mixto — 7 de octubre de 2026
+
+- **15 pruebas de campaña aprobadas**: se reproduce un cambio de Oracle de A13 a A13 5G/A04S y de precio; se conservan nombre y compatibilidad exactos, se usan los precios actuales y se rechazan consultas sin campos del sistema. Se verifican las 24 referencias, stock, fecha, mínimo mixto, combinación de diseños y ausencia de «antes de pagar». Los iPhone base se identifican como normales; Pro/Pro Max conservan su variante, sin alterar los nombres del sistema.
+- Exportador de catálogo comprobado en SQLite temporal: conserva los seis campos públicos, incluye activos sin stock, excluye inactivos y no modifica datos. No se conectó directamente a Oracle.
+- Chromium exportó y verificó los 48 JPG con la consulta completa del 07/10/2026: stock, etiquetas públicas, mínimo mixto y confirmación de disponibilidad. Los 24 nombres y compatibilidades originales, precios y fecha coinciden con la consulta guardada. Revisión visual de A13-01, A13-02, iPhone 13/14 normal e iPhone 17/18 Pro Max; textos dentro del lienzo. La selección prioritaria conserva 136 de las 270 unidades.
+
 ## Anuncios con existencias de Oracle y fotografías mejoradas — 6 de octubre de 2026
 
 - **6 pruebas de campaña aprobadas**: cobertura de las 24 referencias, cantidades y fecha en los 48 documentos, identificación del proveedor y rechazo de consultas incompletas, duplicadas, negativas o booleanas. La consulta reemplaza las cantidades históricas sin modificar el catálogo inicial.

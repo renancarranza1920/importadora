@@ -23,7 +23,13 @@ def csv_bytes(rows, fields):
 def bundle(name, rows, output):
     ads = ROOT / 'output/meta-ads'
     expected = {row[key] for row in rows for key in ('publicacion', 'historia')}
-    stock = json.loads((ROOT / 'data/campaign_stock.json').read_text(encoding='utf-8'))
+    stock = json.loads((ads / 'DATOS-SISTEMA.json').read_text(encoding='utf-8'))
+    current = {p['sku']: p for p in stock['products']}
+    for row in rows:
+        product = current[row['referencia']]
+        assert row['nombre_sistema'] == product['name']
+        assert row['compatibilidad_sistema'] == product['compatibility']
+        assert int(row['unidades_restantes']) == product['stock']
     stock['products'] = [p for p in stock['products'] if p['sku'] in {r['referencia'] for r in rows}]
     with ZipFile(output / name, 'w', ZIP_DEFLATED) as archive:
         for row in rows:
@@ -45,11 +51,11 @@ def bundle(name, rows, output):
             copys = [r for r in csv.DictReader(file) if r['referencia'] in {r['referencia'] for r in rows}]
         archive.writestr('copys-y-enlaces.csv', csv_bytes(copys, list(copys[0])))
         ordered = sorted(rows, key=lambda r: (-int(r['unidades_restantes']), r['referencia']))
-        archive.writestr('PRIORIDAD-STOCK.csv', csv_bytes(ordered, ['referencia','modelos','unidades_restantes','fecha_stock']))
+        archive.writestr('PRIORIDAD-STOCK.csv', csv_bytes(ordered, ['referencia','nombre_sistema','compatibilidad_sistema','modelos','unidades_restantes','fecha_stock']))
         archive.writestr('STOCK-ORACLE.json', json.dumps(stock, ensure_ascii=False, indent=2))
-        figures = ''.join(f'<figure><a href="{r["publicacion"]}"><img src="{r["publicacion"]}" alt="{escape(r["modelos"])}"></a><figcaption>{r["referencia"]} · {escape(r["modelos"])}<br><b>Quedan {r["unidades_restantes"]} unidades</b> · {r["fecha_stock"]}<br><a href="{r["publicacion"]}">Publicación</a> · <a href="{r["historia"]}">Historia</a><br>{escape(r["estado_compatibilidad"])}</figcaption></figure>' for r in ordered)
+        figures = ''.join(f'<figure><a href="{r["publicacion"]}"><img src="{r["publicacion"]}" alt="{escape(r["modelos"])}"></a><figcaption>{r["referencia"]} · {escape(r["nombre_anuncio"])}<br>Compatible con: {escape(r["compatibilidad_anuncio"])}<br><b>Quedan {r["unidades_restantes"]} unidades</b> · {r["fecha_stock"]}<br><a href="{r["publicacion"]}">Publicación</a> · <a href="{r["historia"]}">Historia</a><br>{escape(r["estado_compatibilidad"])}</figcaption></figure>' for r in ordered)
         archive.writestr('index.html', '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IMPORTADORA: anuncios</title><style>body{font:16px Arial;background:#f6f5ef;color:#173e31;margin:24px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px}figure{margin:0}img{width:100%;border-radius:16px}figcaption{line-height:1.6}</style>' + f'<h1>{len(rows)} referencias · {len(expected)} imágenes</h1><p>Stock al {rows[0]["fecha_stock"]}. Ordenadas por unidades restantes.</p><main>{figures}</main></html>')
-        archive.writestr('LEEME.txt', f'{len(rows)} referencias, {len(expected)} imágenes JPG de alta calidad (95%).\nPublicación: 1080x1350. Historia: 1080x1920.\nUnidades restantes al {rows[0]["fecha_stock"]}: {sum(int(r["unidades_restantes"]) for r in rows)}.\nStock por referencia, compartido entre sus modelos compatibles. No se actualiza automáticamente con las ventas.\nHTML editable incluido; Fotos contiene cada fotografía usada una sola vez.\nLas fotografías son mejoras digitales de fuentes pequeñas. No recuperan con certeza detalles originalmente ilegibles. Los originales están conservados en el repositorio.\nIP17PM-01/02/03: etiqueta del proveedor; ajuste físico pendiente, indicado en cada imagen.\nPrecios y compatibilidades del catálogo; confirmar antes de publicar.\nEnlaces del CSV relativos: anteponer la URL real de la tienda.\nMínimo mayorista: 3 unidades combinadas.\n')
+        archive.writestr('LEEME.txt', f'{len(rows)} referencias, {len(expected)} imágenes JPG de alta calidad (95%).\nPublicación: 1080x1350. Historia: 1080x1920.\nUnidades restantes al {rows[0]["fecha_stock"]}: {sum(int(r["unidades_restantes"]) for r in rows)}.\nStock por referencia, compartido entre sus modelos compatibles. No se actualiza automáticamente con las ventas.\nHTML editable incluido; Fotos contiene cada fotografía usada una sola vez.\nLas fotografías son mejoras digitales de fuentes pequeñas. No recuperan con certeza detalles originalmente ilegibles. Los originales están conservados en el repositorio.\nIP17PM-01/02/03: etiqueta del proveedor; ajuste físico pendiente, indicado en cada imagen.\nNombre, compatibilidad, precio y existencias guardados juntos desde la consulta de Oracle. Los CSV conservan nombre_sistema y compatibilidad_sistema sin abreviar. Confirma disponibilidad.\nEnlaces del CSV relativos: anteponer la URL real de la tienda.\nMínimo mayorista: 3 unidades mixtas. Puedes combinar modelos y diseños disponibles en un mismo pedido.\n')
     with ZipFile(output / name) as archive:
         assert archive.testzip() is None
         assert {p for p in archive.namelist() if p.endswith(('.jpg', '.jpeg'))} == expected

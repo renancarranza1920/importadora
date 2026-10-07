@@ -1,102 +1,198 @@
 {
-  "captured_date": "2026-10-06",
+  "captured_date": "2026-10-07",
   "timezone": "America/El_Salvador",
   "source": "Consulta de Oracle compartida por el propietario",
   "products": [
     {
       "sku": "A06-01",
+      "name": "GALAXY A06",
+      "compatibility": "GALAXY A06",
+      "brand": "Samsung",
+      "price_cents": 300,
       "stock": 3
     },
     {
       "sku": "A06-02",
+      "name": "GALAXY A06",
+      "compatibility": "GALAXY A06",
+      "brand": "Samsung",
+      "price_cents": 300,
       "stock": 3
     },
     {
       "sku": "A06-03",
+      "name": "GALAXY A06",
+      "compatibility": "GALAXY A06",
+      "brand": "Samsung",
+      "price_cents": 350,
       "stock": 45
     },
     {
       "sku": "A13-01",
+      "name": "GALAXY A13 5G/ A04S",
+      "compatibility": "GALAXY A13(5G)/ A04S",
+      "brand": "Samsung",
+      "price_cents": 200,
       "stock": 26
     },
     {
       "sku": "A13-02",
+      "name": "GALAXY A13(5G)/ A04S",
+      "compatibility": "GALAXY A13(5G)/ A04S",
+      "brand": "Samsung",
+      "price_cents": 200,
       "stock": 20
     },
     {
       "sku": "A15-01",
+      "name": "GALAXY A15",
+      "compatibility": "GALAXY A15",
+      "brand": "Samsung",
+      "price_cents": 200,
       "stock": 25
     },
     {
       "sku": "A15-02",
+      "name": "GALAXY A15",
+      "compatibility": "GALAXY A15",
+      "brand": "Samsung",
+      "price_cents": 200,
       "stock": 20
     },
     {
       "sku": "A17-01",
+      "name": "GALAXY A17",
+      "compatibility": "GALAXY A17",
+      "brand": "Samsung",
+      "price_cents": 200,
       "stock": 10
     },
     {
       "sku": "A17-02",
+      "name": "GALAXY A17",
+      "compatibility": "GALAXY A17",
+      "brand": "Samsung",
+      "price_cents": 200,
       "stock": 8
     },
     {
       "sku": "A17-03",
+      "name": "GALAXY A16/A17/A26",
+      "compatibility": "GALAXY A16/A17/A26",
+      "brand": "Samsung",
+      "price_cents": 300,
       "stock": 13
     },
     {
       "sku": "A17-04",
+      "name": "GALAXY A16/A17/A26",
+      "compatibility": "GALAXY A16/A17/A26",
+      "brand": "Samsung",
+      "price_cents": 300,
       "stock": 6
     },
     {
       "sku": "A17-05",
+      "name": "GALAXY A16/A17/A26",
+      "compatibility": "GALAXY A16/A17/A26",
+      "brand": "Samsung",
+      "price_cents": 300,
       "stock": 8
     },
     {
       "sku": "A17-06",
+      "name": "GALAXY A16/A17/A26",
+      "compatibility": "GALAXY A16/A17/A26",
+      "brand": "Samsung",
+      "price_cents": 300,
       "stock": 7
     },
     {
       "sku": "A36-01",
+      "name": "GALAXY A36/A56",
+      "compatibility": "GALAXY A36/A56",
+      "brand": "Samsung",
+      "price_cents": 250,
       "stock": 5
     },
     {
       "sku": "A36-02",
+      "name": "GALAXY A36/A56",
+      "compatibility": "GALAXY A36/A56",
+      "brand": "Samsung",
+      "price_cents": 250,
       "stock": 5
     },
     {
       "sku": "IP14-01",
+      "name": "iPhone 13/14",
+      "compatibility": "iPhone 13/14",
+      "brand": "Apple",
+      "price_cents": 225,
       "stock": 5
     },
     {
       "sku": "IP14-02",
+      "name": "iPhone 13/14",
+      "compatibility": "iPhone 13/14",
+      "brand": "Apple",
+      "price_cents": 225,
       "stock": 5
     },
     {
       "sku": "IP17PM-01",
+      "name": "iPhone 17PM/ 18PM",
+      "compatibility": "iPhone 17PM/ 18PM",
+      "brand": "Apple",
+      "price_cents": 200,
       "stock": 8
     },
     {
       "sku": "IP17PM-02",
+      "name": "iPhone 17PM/ 18PM",
+      "compatibility": "iPhone 17PM/ 18PM",
+      "brand": "Apple",
+      "price_cents": 200,
       "stock": 8
     },
     {
       "sku": "IP17PM-03",
+      "name": "iPhone 17PM/ 18PM",
+      "compatibility": "iPhone 17PM/ 18PM",
+      "brand": "Apple",
+      "price_cents": 200,
       "stock": 18
     },
     {
       "sku": "IPX-01",
+      "name": "iPhone X",
+      "compatibility": "iPhone X",
+      "brand": "Apple",
+      "price_cents": 225,
       "stock": 10
     },
     {
       "sku": "N10-01",
+      "name": "GALAXY NOTE 10",
+      "compatibility": "GALAXY NOTE 10",
+      "brand": "Samsung",
+      "price_cents": 250,
       "stock": 5
     },
     {
       "sku": "N20-01",
+      "name": "NOTE 20",
+      "compatibility": "NOTE 20",
+      "brand": "Samsung",
+      "price_cents": 300,
       "stock": 4
     },
     {
       "sku": "S22-01",
+      "name": "GALAXY S22",
+      "compatibility": "GALAXY S22",
+      "brand": "Samsung",
+      "price_cents": 250,
       "stock": 3
     }
   ]

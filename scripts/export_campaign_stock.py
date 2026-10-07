@@ -1,4 +1,4 @@
-"""Read only: print a dated SKU/stock snapshot without credentials or customer data."""
+"""Read only: export public campaign fields from one dated system query."""
 from datetime import datetime
 import json
 import os
@@ -19,8 +19,8 @@ def main():
     engine = create_engine(url)
     try:
         with engine.connect() as connection:
-            rows = connection.execute(text('SELECT sku, stock FROM products WHERE active = true ORDER BY sku'))
-            products = [dict(sku=row[0], stock=int(row[1])) for row in rows]
+            rows = connection.execute(text('SELECT sku, name, compatibility, brand, price_cents, stock FROM products WHERE active = true ORDER BY sku'))
+            products = [dict(row) for row in rows.mappings()]
         if not products:
             raise SystemExit('La consulta no devolvió referencias activas.')
         json.dump(dict(captured_date=datetime.now(ZoneInfo('America/El_Salvador')).date().isoformat(),

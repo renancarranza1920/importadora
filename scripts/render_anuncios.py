@@ -28,6 +28,12 @@ def main():
                     box = page.locator(selector).bounding_box()
                     assert box and box['y'] >= 0 and box['y'] + box['height'] <= height, (target, selector)
                 assert page.locator('.stock strong').inner_text() == f"QUEDAN {row['unidades_restantes']} UNIDADES"
+                assert page.locator('.models strong').inner_text() == row['nombre_anuncio']
+                if row['compatibilidad_anuncio'] != row['nombre_anuncio']:
+                    assert page.locator('.compatibility b').inner_text() == row['compatibilidad_anuncio']
+                assert page.locator('.minimum strong').inner_text() == 'MÍNIMO 3 UNIDADES MIXTAS'
+                assert page.locator('.minimum small').inner_text() == 'Puedes combinar modelos y diseños'
+                assert page.locator('.sku').inner_text() == f"REFERENCIA {row['referencia']} · Confirma disponibilidad"
                 assert page.locator('.photo').bounding_box()['height'] >= 240
                 page.screenshot(path=str(target), **({'quality': 95} if target.suffix == '.jpg' else {}))
             print(f"Exportada {row['referencia']}: {row['unidades_restantes']} unidades", flush=True)

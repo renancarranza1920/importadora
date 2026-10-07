@@ -10,13 +10,15 @@ Los paquetes están en GitHub. Abre un ZIP y pulsa **Download raw file**, o usa 
 | Solo iPhone | 12 imágenes de 6 referencias; textos y fotografías incluidos | [ZIP de iPhone](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/anuncios-iphone.zip) |
 | Proyecto web | Código, originales, fotografías mejoradas, consulta de existencias, pruebas y documentación; sin bases, contraseñas ni secretos | [ZIP del proyecto](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/importadora-publicar.zip) |
 
-Cada imagen muestra **QUEDAN N UNIDADES** y **Stock al 06/10/2026**, según la consulta de Oracle compartida por el propietario. Las cantidades se comparten entre los modelos compatibles de cada referencia. Estos anuncios son archivos estáticos: hay que actualizarlos cuando cambien las existencias. `PRIORIDAD-STOCK.csv` ordena las referencias de mayor a menor stock.
+Cada imagen muestra **QUEDAN N UNIDADES** y **Stock al 07/10/2026**, según la consulta de Oracle compartida por el propietario. Las cantidades se comparten entre los modelos compatibles de cada referencia. Estos anuncios son archivos estáticos: hay que actualizarlos cuando cambien las existencias. `PRIORIDAD-STOCK.csv` ordena las referencias de mayor a menor stock.
 
 **48 imágenes son 24 referencias/diseños en dos formatos.** Samsung: 18 referencias, 36 imágenes. iPhone: 6 referencias, 12 imágenes. Los JPG se exportan con calidad 95 %, publicación 1080×1350 e historia 1080×1920. Las fotografías mejoradas están incluidas una sola vez por referencia; los documentos HTML las usan sin duplicar archivos.
 
-Las fotos se optimizaron digitalmente a partir de fuentes pequeñas. La mejora no recupera con certeza detalles originalmente ilegibles; los originales siguen en `assets/products/`. Los precios proceden del catálogo. IP17PM-01, IP17PM-02 e IP17PM-03 conservan la etiqueta 17 Pro Max / 18 Pro Max indicada por el proveedor y la nota de ajuste físico pendiente visible.
+Las fotos se optimizaron digitalmente a partir de fuentes pequeñas. La mejora no recupera con certeza detalles originalmente ilegibles; los originales siguen en `assets/products/`. Los nombres, compatibilidades, precios y cantidades proceden juntos de la consulta actual de Oracle. Se conservan variantes como 5G, paréntesis y todos los modelos separados con `/`, tanto en las imágenes como en JSON y CSV. IP17PM-01, IP17PM-02 e IP17PM-03 conservan la etiqueta 17 Pro Max / 18 Pro Max indicada por el proveedor y la nota de ajuste físico pendiente visible.
 
-Mínimo mayorista: tres unidades combinadas. Envío económico a puntos específicos según el total de compra; personalizado a domicilio por $5, ambos a todo el país.
+Cada imagen indica **MÍNIMO 3 UNIDADES MIXTAS** y **Puedes combinar modelos y diseños**. El pie dice **Confirma disponibilidad**. Envío económico a puntos específicos según el total de compra; personalizado a domicilio por $5, ambos a todo el país.
+
+Los iPhone base se anuncian como **iPhone 13 normal / iPhone 14 normal** y **iPhone X normal**. Los Pro Max se identifican como Pro Max. Los campos originales del sistema se conservan separados de los nombres públicos de los anuncios.
 
 Para descargar los cambios en Oracle:
 

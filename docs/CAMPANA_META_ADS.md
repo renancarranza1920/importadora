@@ -1,10 +1,20 @@
 # Protectores mayoristas: campaña por modelo
 
-## Inventario para esta entrega: 06/10/2026
+## Nombres del sistema y pedido mixto
+
+La generación usa una consulta completa de Oracle: `sku`, `name`, `compatibility`, `brand`, `price_cents` y `stock`, con fecha y zona horaria. Los campos `name` y `compatibility` se conservan exactamente, incluyendo variantes 4G/5G, paréntesis, mayúsculas y todos los modelos separados con `/`. No se normalizan ni se sustituyen por el catálogo inicial. Cada imagen muestra el nombre del sistema; si su compatibilidad tiene un texto diferente, también la muestra completa.
+
+Los CSV conservan `nombre_sistema` y `compatibilidad_sistema`, y el JSON de cada ZIP guarda nombres, compatibilidades, precio y existencias juntos. Un ejemplo confirmado por la captura del propietario es `GALAXY A13 5G/ A04S`, compatible con `GALAXY A13(5G)/ A04S`; anunciar solamente A13 omitiría una variante y otro modelo disponible.
+
+Por indicación del propietario, los iPhone base se presentan como **iPhone 13 normal / iPhone 14 normal** y **iPhone X normal**. Pro y Pro Max conservan su variante; `17PM/18PM` se muestra como **iPhone 17 Pro Max / iPhone 18 Pro Max**, con la nota del proveedor. Los nombres originales de Oracle quedan intactos; `nombre_anuncio` y `compatibilidad_anuncio` guardan las etiquetas públicas en los CSV.
+
+Junto al precio se indica **MÍNIMO 3 UNIDADES MIXTAS** y **Puedes combinar modelos y diseños**. El mínimo se aplica al pedido completo. El pie de la imagen dice **Confirma disponibilidad**.
+
+## Inventario de esta entrega: 07/10/2026
 
 Fuente: consulta de Oracle compartida por el propietario, guardada en `data/campaign_stock.json`. Quedan **270 unidades en 24 referencias**. Cada pieza muestra la cantidad por referencia y la fecha; una referencia compatible con varios teléfonos comparte esas unidades. Los dos tamaños de un anuncio tampoco representan existencias adicionales.
 
-| Prioridad | Referencia | Unidades restantes | Precio del catálogo |
+| Prioridad | Referencia | Unidades restantes | Precio del sistema |
 | --- | --- | ---: | ---: |
 | 1 | A06-03 | 45 | $3.50 |
 | 2 | A13-01 | 26 | $2.00 |
@@ -14,7 +24,7 @@ Fuente: consulta de Oracle compartida por el propietario, guardada en `data/camp
 
 Estas cinco referencias reúnen **136 unidades, el 50.4 % del inventario consultado**. El ZIP prioritario contiene sus diez imágenes. La campaña inicial de tres diseños (A06-03, A13-01, A15-01) reúne 96 unidades. Las familias A06, A13 y A15 completas suman 142 unidades; no confundir ese total con el de las referencias seleccionadas.
 
-`PRIORIDAD-STOCK.csv` ordena las 24 referencias por cantidad. Los precios y compatibilidades proceden del catálogo; no se consultaron precios actuales en Oracle. Las cantidades impresas son estáticas: revisar y regenerar después de ventas o ajustes, y pausar referencias agotadas.
+`PRIORIDAD-STOCK.csv` ordena las 24 referencias por cantidad. Nombres, compatibilidades, precios y cantidades se obtuvieron juntos de Oracle el 07/10/2026. Las cantidades impresas son estáticas: revisar y regenerar después de ventas o ajustes, y pausar referencias agotadas.
 
 ## Datos históricos del catálogo inicial
 
@@ -43,13 +53,13 @@ Las existencias de una referencia compatible con varios teléfonos se comparten;
 
 Según tu experiencia, alrededor del 90 % de las consultas pide modelos ajenos al catálogo. Eso sugiere que la imagen y el camino al pedido no están filtrando suficientemente la compatibilidad. No demuestra por sí solo la causa de las dos campañas anteriores: faltan sus anuncios, presupuesto, segmentación y resultados.
 
-Una lámina con muchos teléfonos obliga a leer demasiado antes de saber si el protector sirve. Separar piezas por referencia permite poner la foto protagonista y debajo **SOLO PARA ESTOS MODELOS**, el nombre exacto, precio unitario y **MÍNIMO 3 UNIDADES**. Las piezas no prometen que dejarán de llegar consultas incorrectas; hacen que el cliente pueda calificarse antes de escribir.
+Una lámina con muchos teléfonos obliga a leer demasiado antes de saber si el protector sirve. Separar piezas por referencia permite poner la foto protagonista y debajo **SOLO PARA ESTOS MODELOS**, el nombre exacto, precio unitario y **MÍNIMO 3 UNIDADES MIXTAS**. Las piezas no prometen que dejarán de llegar consultas incorrectas; hacen que el cliente pueda calificarse antes de escribir.
 
 Para referencias compartidas, muestra únicamente el pequeño grupo compatible en esa pieza. Si pruebas variantes por teléfono individual, conserva la misma referencia y no dupliques stock. No añadas modelos distintos a la imagen ni promociones un estilo para todos los teléfonos de la familia.
 
 ## Primera prueba de venta
 
-1. Empieza con A06-03, A13-01 y A15-01: reúnen 96 unidades actuales. Para ampliar, prueba A13-02 y A15-02: las cinco referencias suman 136 unidades. Usa $3.50 sobre A06-03 y $2.00 sobre A13/A15; no pongas el precio de otro diseño sobre una foto. A06-01 y A06-02 solo tienen tres unidades cada una, así que no son la prioridad de esta campaña.
+1. Empieza con A06-03, A13-01 y A15-01: reúnen 96 unidades actuales. Para ampliar, prueba A13-02 y A15-02: las cinco referencias suman 136 unidades. Usa $3.50 sobre A06-03 y $2.00 sobre A13/A15; no pongas el precio de otro diseño sobre una foto. Las dos referencias A13 declaran A13 5G/A04S: incluir ambos modelos en la pieza. A06-01 y A06-02 solo tienen tres unidades cada una, así que no son la prioridad de esta campaña.
 2. Usa el objetivo/configuración de Meta que permita conversaciones en WhatsApp, si está disponible en tu cuenta. Envía cada anuncio al chat del negocio o al enlace del catálogo filtrado de esa referencia. Las piezas y textos sirven para cualquiera de esos destinos; compara resultados sin mezclar ambos destinos en la misma prueba.
 3. La cobertura confirmada es todo el país. El envío económico llega a puntos específicos y su costo depende del total de compra; el personalizado a domicilio cuesta $5. No se proporcionó una tabla de tarifas económicas ni plazos: confírmalos en el chat. El interés en teléfonos de una marca no garantiza que alguien posea un modelo concreto; no dependas de una supuesta segmentación por modelo exacto.
 4. Con presupuesto pequeño, prueba un grupo de modelo a la vez, con una o dos variantes. Si el presupuesto permite compararlos, asigna condiciones y gasto similares a los tres grupos. No lances 24 grupos simultáneos: dispersarías la prueba. Fija antes el gasto máximo; el presupuesto y margen no fueron suministrados, por lo que no hay aquí una cifra de inversión recomendada.
@@ -57,7 +67,7 @@ Para referencias compartidas, muestra únicamente el pequeño grupo compatible e
 
 Ejemplo de texto listo para A06-03:
 
-> Protector de corazones SOLO para Galaxy A06. Referencia A06-03: $3.50 por unidad. Quedan 45 unidades de esta referencia al 06/10/2026. Venta mayorista desde 3 unidades combinadas. Somos tienda en línea, sin local físico. Envíos a todo el país: económico a puntos específicos con costo según el total de tu compra, o personalizado a domicilio por $5. Escríbenos: «Quiero A06-03, mi teléfono es Galaxy A06 y necesito ___ unidades». Confirmamos disponibilidad y total con envío antes de pagar.
+> Protector de corazones SOLO para Galaxy A06. Referencia A06-03: $3.50 por unidad. Quedan 45 unidades de esta referencia al 07/10/2026. Venta mayorista desde 3 unidades mixtas; puedes combinar modelos y diseños. Somos tienda en línea, sin local físico. Envíos a todo el país: económico a puntos específicos con costo según el total de tu compra, o personalizado a domicilio por $5. Escríbenos: «Quiero A06-03, mi teléfono es Galaxy A06 y necesito ___ unidades». Confirmamos disponibilidad.
 
 La foto real A06-03 muestra corazones; otros diseños usan el texto genérico del CSV para no atribuir características que no se han verificado. No se anunció un catálogo minorista inexistente: se ofrece consultarlo por WhatsApp hasta que proporciones ese catálogo.
 
@@ -68,8 +78,8 @@ En la web hay seis preguntas predeterminadas sobre modelos, mínimo de compra, t
 Para el destino WhatsApp de Meta, configura manualmente las opciones de inicio de conversación o respuestas rápidas que permita tu cuenta; el asistente de la web no instala un bot dentro de WhatsApp. Guion sugerido:
 
 - **¿Qué modelos tienen?** «En este anuncio ofrecemos únicamente [modelo/grupo de la pieza]. Para otros protectores consulta nuestro catálogo y verifica el modelo exacto de tu teléfono».
-- **¿Cuál es el mínimo?** «Este catálogo es mayorista desde 3 unidades combinadas. Indícanos la referencia, tu modelo exacto y cuántas unidades necesitas».
-- **¿Cuánto cuesta el envío?** «Cubrimos todo el país. El envío económico llega a puntos específicos y cuesta según el total de compra; el personalizado a tu casa cuesta $5. Indícanos tu zona y opción para confirmar la entrega antes de pagar».
+- **¿Cuál es el mínimo?** «Este catálogo es mayorista desde 3 unidades mixtas; puedes combinar modelos y diseños. Indícanos la referencia, tu modelo exacto y cuántas unidades necesitas».
+- **¿Cuánto cuesta el envío?** «Cubrimos todo el país. El envío económico llega a puntos específicos y cuesta según el total de compra; el personalizado a tu casa cuesta $5. Indícanos tu zona y opción para confirmar la disponibilidad de entrega».
 - **¿Dónde está la tienda?** «Somos tienda en línea, sin local físico. Coordinamos tu entrega por WhatsApp».
 
 Si alguien pide un modelo no disponible: «Ese modelo no aparece disponible en este catálogo. Para verificar otra opción, puedes consultar el catálogo o escribirnos por WhatsApp». No anuncies una reposición ni una compatibilidad que no esté confirmada.
@@ -103,7 +113,7 @@ else
 fi
 ```
 
-El script consulta únicamente referencias activas y cantidades. La generación comprueba que la consulta cubra el catálogo; rechaza datos incompletos, negativos o duplicados en vez de completar con cantidades antiguas. El archivo de consulta de este repositorio es una instantánea pública para anuncios; no restaura ni modifica el inventario de la tienda.
+El script consulta únicamente los campos públicos de las referencias activas: nombre, compatibilidad, marca, precio y existencias. La generación comprueba que la consulta cubra el catálogo; rechaza datos incompletos, cantidades negativas, precios inválidos o referencias duplicadas. Las consultas antiguas que solo incluyen SKU y stock deben renovarse: el generador no completa los nombres con el catálogo histórico. El archivo de consulta de este repositorio es una instantánea pública para anuncios; no restaura ni modifica el inventario de la tienda.
 
 En una máquina de desarrollo con las dependencias del proyecto:
 
