@@ -4,7 +4,7 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
-files = [".gitignore", ".dockerignore", "deploy/Dockerfile", "scripts/actualizar_oracle.sh", ".streamlit/config.toml", ".streamlit/secrets.toml.example",
+files = [".gitignore", ".dockerignore", "deploy/Dockerfile", "scripts/actualizar_oracle.sh", "descargas/README.md", ".streamlit/config.toml", ".streamlit/secrets.toml.example",
          "README.md", "AGENTS.md", "INICIAR_APP.bat", "app.py", "auth.py", "inventory.py", "ticket.py", "order_views.py", "shop.py", "styles.css",
          "requirements.txt", "requirements-dev.txt", "data/catalog_seed.json"]
 for folder, pattern in (("assets/products", "*"), ("assets/fonts", "*"), ("docs", "*.md"), ("scripts", "*.py"), ("tests", "*.py")):

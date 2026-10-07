@@ -14,5 +14,6 @@ data/*.sqlite*
 data/*.hash
 backups
 output
+descargas
 tmp
 *.log

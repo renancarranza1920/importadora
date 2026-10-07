@@ -2,6 +2,8 @@
 
 App web de catálogo mayorista, inventario y ventas, en español y con precios en USD.
 
+**[Descargar los anuncios, textos y ZIP del proyecto desde GitHub](descargas/README.md).**
+
 El catálogo suministrado ya está importado: **24 referencias, 360 unidades y $902.50 de valor inicial a precio de venta**. Los nombres con varios modelos representan un único artículo compatible, con existencias compartidas. Las imágenes son las originales extraídas del PDF.
 
 ## Abrir en esta computadora
