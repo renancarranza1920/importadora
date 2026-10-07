@@ -2,6 +2,13 @@
 
 Los paquetes están en GitHub. Abre un ZIP y pulsa **Download raw file**, o usa estos enlaces:
 
+La prueba piloto de **mariposas crema y negro** usa una sola imagen con los dos colores y cuatro referencias: crema A13-02 (20) y A15-02 (20); negro A13-01 (26) y A15-01 (25). A13 5G / A04S comparte la cantidad de su referencia; A15 tiene existencias separadas. Precio $2 por unidad y mínimo 3 unidades mixtas. Datos al 07/10/2026.
+
+- [Descargar imagen de mariposas](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/mariposas-crema-negro.png)
+- [Descargar campaña unificada: imagen, datos y texto](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/campana-mariposas-unificada.zip)
+
+Esta pieza reúne fotografías representativas del diseño; el ajuste corresponde a cada modelo. Para el piloto, seleccionar **imagen única**, destino WhatsApp y presupuesto **total de $2**, no diario. Las cantidades son estáticas y deben actualizarse si cambia el inventario.
+
 | Paquete | Contenido | Descargar |
 | --- | --- | --- |
 | Campaña de mayor stock | 10 imágenes: A06-03 (45), A13-01 (26), A15-01 (25), A13-02 (20), A15-02 (20); textos incluidos | [ZIP prioritario](https://github.com/renancarranza1920/importadora/raw/refs/heads/main/descargas/campana-stock-prioritario.zip) |
@@ -30,4 +37,4 @@ git pull --ff-only origin main
 
 Esta entrega actualiza anuncios y herramientas; no cambia el código de la web y no requiere reiniciar contenedores. Cuando recibas cambios de interfaz, aplícalos con `bash scripts/actualizar_oracle.sh importadora` después de descargar `main`.
 
-`SHA256SUMS` comprueba la integridad de los cinco ZIP. Esta carpeta y las fotografías de campaña se excluyen del contexto Docker.
+`SHA256SUMS` comprueba la integridad de los ZIP y de la imagen unificada. Esta carpeta y las fotografías de campaña se excluyen del contexto Docker.
